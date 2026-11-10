@@ -295,6 +295,8 @@ body.noscroll{overflow:hidden}
 .sheet-in{position:relative}
 .more{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:12.5px}
 .more::before,.more::after{content:"";flex:1;border-top:1px dashed var(--line)}
+@media (max-width:560px){.appnav{gap:0;justify-content:space-between}.appnav a{font-size:12px;padding:6px 4px;letter-spacing:-.02em}}
+.archive .myq{display:inline-block;margin-top:4px;font-size:12px;font-weight:700;color:var(--my)}
 </style>
 
 <div class="wrap">
@@ -816,7 +818,8 @@ $('#rbm').addEventListener('click', e => { const a=e.target.closest('a'); if(a &
 
 /* ---------- 過去の号 ---------- */
 function renderArchive(){
-  $('#arch').innerHTML = editions.map(e => `<a href="#today" data-go="${esc(e.date)}"><small>${esc(e.date.replace(/-/g,'.'))}・${e.count}話題</small>${(e.titles||[]).map(t=>`<span>${esc(t)}</span>`).join('')}</a>`).join('');
+  $('#arch').innerHTML = editions.map(e => { const n = Object.keys(st.quiz).filter(k => k.startsWith(e.date+'|')).length;
+    return `<a href="#today" data-go="${esc(e.date)}"><small>${esc(e.date.replace(/-/g,'.'))}・${e.count}話題</small>${(e.titles||[]).map(t=>`<span>${esc(t)}</span>`).join('')}<span class="myq">${n ? `予想した話 ${n}／${e.count}` : 'まだ予想していません →'}</span></a>`; }).join('');
 }
 $('#arch').addEventListener('click', e => { const a=e.target.closest('a'); if(a && a.dataset.go) openEdition(a.dataset.go); });
 
