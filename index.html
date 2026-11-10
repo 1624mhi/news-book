@@ -108,8 +108,11 @@ nav.filters{position:static}
 .view{display:grid;gap:16px;padding-block:20px}
 .view > h2{font-size:22px}
 .addword{display:grid;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
-.stats{display:flex;flex-wrap:wrap;gap:12px}
-.stat{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 16px;min-width:120px}
+.stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+@media (max-width:560px){.stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.addwrap{margin-top:8px}.addwrap summary{margin-bottom:8px}
+.gostory{font:inherit;font-size:12px;background:none;border:0;padding:0;color:var(--accent);text-decoration:underline;cursor:pointer;text-align:left}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 16px;min-width:0}
 .stat b{display:block;font-family:var(--f-mono);font-size:26px;font-weight:500}
 .stat span{font-size:12px;color:var(--muted)}
 .archive{display:grid;gap:10px}
@@ -343,14 +346,14 @@ body.noscroll{overflow:hidden}
 
   <section id="v-words" class="view" hidden>
     <h2>単語帳</h2>
+    <div class="tabs" id="wtabs"></div>
+    <div id="wbody"></div>
+    <details class="addwrap"><summary>＋ 自分で単語を追加する</summary>
     <form class="addword" id="addword">
-      <b>自分で単語を追加</b>
       <input id="aw-term" placeholder="単語（例：ねじれ議会）" maxlength="60" required>
       <textarea id="aw-def" rows="2" placeholder="意味やメモ" maxlength="400"></textarea>
       <div><button class="btn primary" type="submit">追加する</button></div>
-    </form>
-    <div class="tabs" id="wtabs"></div>
-    <div id="wbody"></div>
+    </form></details>
   </section>
 
   <section id="v-review" class="view" hidden>
@@ -379,9 +382,9 @@ const today = () => new Date().toLocaleDateString('sv-SE',{timeZone:'Asia/Kuala_
 
 /* ---------- 状態（保存データ） ---------- */
 const KEY = 'newsbook-v1';
-let st = {bookmarks:[], words:[], marks:[], quiz:{}, opinions:[], follows:[]};
+let st = {bookmarks:[], words:[], marks:[], quiz:{}, opinions:[], follows:[], quizDays:{}};
 try { Object.assign(st, JSON.parse(localStorage.getItem(KEY)) || {}); } catch(e) {}
-st.quiz = st.quiz || {}; st.opinions = st.opinions || []; st.follows = st.follows || [];
+st.quiz = st.quiz || {}; st.opinions = st.opinions || []; st.follows = st.follows || []; st.quizDays = st.quizDays || {};
 let db = null, stateRef = null, remoteReady = false, writing = Promise.resolve(), saveTimer = null;
 function setSync(t){ $('#sync').textContent = t; }
 function save(){
@@ -487,8 +490,9 @@ const qkey = s => D.date + '|' + s.id;
 const isFol = s => !!s.thread && st.follows.includes(s.thread);
 const myOp = s => st.opinions.find(o => o.date===D.date && o.id===s.id);
 function ymd(d){ return d.toLocaleDateString('sv-SE',{timeZone:'Asia/Kuala_Lumpur'}); }
+function markDay(){ st.quizDays = st.quizDays || {}; const t = today(); st.quizDays[t] = (st.quizDays[t] || 0) + 1; }
 function streak(){
-  const days = new Set(Object.keys(st.quiz).map(k => k.split('|')[0]));
+  const days = new Set(Object.keys(st.quiz).map(k => k.split('|')[0]).concat(Object.keys(st.quizDays || {})));
   const d = new Date(); let n = 0;
   if(!days.has(ymd(d))) d.setDate(d.getDate()-1);
   while(days.has(ymd(d))){ n++; d.setDate(d.getDate()-1); }
@@ -653,7 +657,7 @@ function onStoryClick(e){
   if(b.dataset.next){ openSheet(b.dataset.next); return; }
   const s = D.stories.find(x => x.id === openId);
   if(b.dataset.speak && s){ speakStory(s); return; }
-  if(b.dataset.quiz && s){ st.quiz[qkey(s)] = +b.dataset.quiz; justRight = +b.dataset.quiz === s.quiz.answer ? qkey(s) : null; save(); renderStories(); justRight = null; return; }
+  if(b.dataset.quiz && s){ markDay(); st.quiz[qkey(s)] = +b.dataset.quiz; justRight = +b.dataset.quiz === s.quiz.answer ? qkey(s) : null; save(); renderStories(); justRight = null; return; }
   if(b.dataset.op && s){ const c = s.opinion.choices[+b.dataset.op];
     st.opinions = st.opinions.filter(o => !(o.date===D.date && o.id===s.id));
     st.opinions.push({date:D.date, id:s.id, title:s.title, thread:s.thread||'', q:s.opinion.q, choice:c, savedAt:today()}); save(); renderStories(); return; }
@@ -751,7 +755,7 @@ function renderWords(){
   $('#wtabs').innerHTML = tabs.map(([k,l]) => `<button class="chip" type="button" data-t="${k}" aria-pressed="${k===wtab}">${l}</button>`).join('');
   let h = '';
   const rev = a => a.map((x,i)=>[x,i]).reverse();
-  if(wtab==='words') h = st.words.length ? `<div class="list">${rev(st.words).map(([w,i])=>`<div class="item"><b>${esc(w.term)}</b><span>${esc(w.def)}</span>${w.known?'<span class="known">覚えた</span>':''}<small>${esc(w.date||'')}${w.storyTitle?'・'+esc(w.storyTitle):''}</small><button class="rm" type="button" data-rm="words" data-i="${i}">削除</button></div>`).join('')}</div>` : `<p class="empty">用語の「単語帳に追加」か、上のフォームで単語をためられます。</p>`;
+  if(wtab==='words') h = st.words.length ? `<div class="list">${rev(st.words).map(([w,i])=>`<div class="item"><b>${esc(w.term)}</b><span>${esc(w.def)}</span>${w.known?'<span class="known">覚えた</span>':''}<small>${esc(w.date||'')}${w.storyTitle?(w.story?`・<button class="gostory" type="button" data-gs="${esc(w.date)}|${esc(w.story)}">${esc(w.storyTitle)} →</button>`:'・'+esc(w.storyTitle)):''}</small><button class="rm" type="button" data-rm="words" data-i="${i}">削除</button></div>`).join('')}</div>` : `<p class="empty">用語の「単語帳に追加」か、上のフォームで単語をためられます。</p>`;
   if(wtab==='marks') h = st.marks.length ? `<div class="list">${rev(st.marks).map(([m,i])=>`<div class="item"><span>${m.qa?esc(m.text):`<mark>${esc(m.text)}</mark>`}</span><small>${esc(m.date||'')}${m.storyTitle?'・'+esc(m.storyTitle):''}</small><button class="rm" type="button" data-rm="marks" data-i="${i}">削除</button></div>`).join('')}</div>` : `<p class="empty">記事の文章を選んで「マーカーで保存」を押すとここにたまります。Claudeへの質問と答えもここに残ります。</p>`;
   if(wtab==='zukan'){ h = '<p class="empty">読みこみ中…</p>'; buildZukan(); }
   if(wtab==='bm') h = st.bookmarks.length ? `<div class="list">${rev(st.bookmarks).map(([b,i])=>`<div class="item"><a href="#today" data-go="${esc(b.date)}">${esc(b.title)}</a><small>${esc(b.date)}</small><button class="rm" type="button" data-rm="bookmarks" data-i="${i}">削除</button></div>`).join('')}</div>` : `<p class="empty">話題の「☆ 保存」を押すとここにたまります。</p>`;
@@ -762,7 +766,9 @@ $('#wbody').addEventListener('click', e => {
   const b = e.target.closest('button,a'); if(!b) return;
   if(b.dataset.rm){ st[b.dataset.rm].splice(+b.dataset.i,1); save(); renderWords(); }
   if(b.dataset.go){ openEdition(b.dataset.go); }
+  if(b.dataset.gs){ const [d, id] = b.dataset.gs.split('|'); goStory(d, id); }
 });
+async function goStory(d, id){ filter = 'すべて'; placeF = null; await openEdition(d); location.hash = '#today'; setTimeout(() => { if(D.date === d) openSheet(id); }, 80); }
 $('#addword').addEventListener('submit', e => {
   e.preventDefault(); const t = $('#aw-term').value.trim(); if(!t) return;
   st.words = st.words.filter(w=>w.term!==t);
@@ -784,7 +790,7 @@ async function buildMiss(){
       ${r!=null ? `<span>${r===s.quiz.answer?'◎ 今度は正解！':'△ 正解は '+'ABC'[s.quiz.answer]}　${esc(s.quiz.explain)}</span>` : ''}</div>`; }).join('')
     : '<p class="empty">はずれた予想はまだありません。「今日のニュース」で予想してみましょう。</p>';
 }
-$('#rmiss').addEventListener('click', e => { const b = e.target.closest('button'); if(!b || !b.dataset.rk) return; retry[b.dataset.rk] = +b.dataset.ri; buildMiss(); });
+$('#rmiss').addEventListener('click', e => { const b = e.target.closest('button'); if(!b || !b.dataset.rk) return; retry[b.dataset.rk] = +b.dataset.ri; markDay(); save(); buildMiss(); });
 function renderReview(){
   const w0 = weekAgo();
   const wkWords = st.words.filter(w => (w.savedAt||w.date||'') >= w0);
@@ -898,7 +904,7 @@ function bindDrag(card){
 }
 $('#v-swipe').addEventListener('click', e => {
   const b = e.target.closest('button'); if(!b) return;
-  if(b.dataset.sq){ const s = swipeList()[si]; if(s && s.quiz && st.quiz[qkey(s)] == null){ st.quiz[qkey(s)] = +b.dataset.sq; justRight = +b.dataset.sq === s.quiz.answer ? qkey(s) : null; save(); renderSwipe(); justRight = null; } return; }
+  if(b.dataset.sq){ const s = swipeList()[si]; if(s && s.quiz && st.quiz[qkey(s)] == null){ markDay(); st.quiz[qkey(s)] = +b.dataset.sq; justRight = +b.dataset.sq === s.quiz.answer ? qkey(s) : null; save(); renderSwipe(); justRight = null; } return; }
   if(b.dataset.s === 'keep' || b.dataset.s === 'skip') swipeDone(b.dataset.s);
   if(b.dataset.st){ stab = b.dataset.st; si = 0; kept = 0; renderSwipe(); return; }
   if(b.dataset.s === 'more' && swipeList()[si]) openStory(swipeList()[si].id);
@@ -965,7 +971,7 @@ if(window.NEWSBOOK_SITE){
     }
     if(snap.exists){
       const d = snap.data();
-      st = {bookmarks: d.bookmarks || [], words: d.words || [], marks: d.marks || [], quiz: d.quiz || {}, opinions: d.opinions || [], follows: d.follows || []};
+      st = {bookmarks: d.bookmarks || [], words: d.words || [], marks: d.marks || [], quiz: d.quiz || {}, opinions: d.opinions || [], follows: d.follows || [], quizDays: d.quizDays || {}};
       try { localStorage.setItem(KEY, JSON.stringify(st)); } catch(e) {}
       setSync('どの端末でも同期されます');
       route();
