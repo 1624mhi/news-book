@@ -858,8 +858,11 @@ function renderSwipe(){
   $('#sbtns').hidden = si >= list.length;
   if(si >= list.length){
     deck.innerHTML = `<div class="scard" style="cursor:default;justify-content:center;align-items:center;text-align:center">
-      <h2>${stab==='すべて'?'今朝の':stab+'の'}${list.length}話題を見終わりました</h2><p class="lead">「あとで読む」にしたのは ${kept} 件です。</p>
-      <div class="sbtns"><button type="button" class="keep" data-s="read">保存した話題を読む</button><button type="button" data-s="again">もう一度</button></div></div>`;
+      ${(() => { const qs = list.filter(x => x.quiz), dn = qs.filter(x => st.quiz[qkey(x)] != null), ok = dn.filter(x => st.quiz[qkey(x)] === x.quiz.answer);
+        return `<span class="emo">${ok.length && ok.length === dn.length ? '🏆' : '☕'}</span><h2>${stab==='すべて'?'今朝の':stab+'の'}${list.length}話題を見終わりました</h2>
+        ${qs.length ? `<p class="lead">予想 ${dn.length}問のうち <b>${ok.length}問</b> 的中　${streakText()}</p>` : ''}
+        <p class="lead">「あとで読む」にしたのは ${kept} 件です。</p>`; })()}
+      <div class="sbtns">${kept ? '<button type="button" class="keep" data-s="read">あとで読むにした話を読む</button>' : '<button type="button" class="keep" data-s="today">今日のニュースをじっくり読む</button>'}<button type="button" data-s="again">もう一度</button></div></div>`;
     return;
   }
   deck.innerHTML = (list[si+1] ? cardHTML(list[si+1], 'back') : '') + cardHTML(list[si], 'front');
@@ -901,6 +904,7 @@ $('#v-swipe').addEventListener('click', e => {
   if(b.dataset.s === 'more' && swipeList()[si]) openStory(swipeList()[si].id);
   if(b.dataset.s === 'again'){ si = 0; kept = 0; renderSwipe(); }
   if(b.dataset.s === 'read'){ filter = '★'; location.hash = '#today'; }
+  if(b.dataset.s === 'today'){ filter = 'すべて'; location.hash = '#today'; }
 });
 addEventListener('keydown', e => {
   if($('#v-swipe').hidden || e.target.closest('input,textarea,select')) return;
