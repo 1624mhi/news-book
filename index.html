@@ -288,6 +288,11 @@ body.noscroll{overflow:hidden}
 .linkbtn b{font-size:14px;line-height:1.45}
 @media (max-width:520px){header.top{padding-block:18px 4px;gap:2px}h1{font-size:22px}.lede{font-size:12.5px;line-height:1.6}}
 @media (max-width:560px){.pin{min-width:18px;height:18px;font-size:10px;padding:0 3px}.pin .pe{font-size:11px}}
+.tw{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:help;text-decoration:underline dotted var(--rc);text-decoration-thickness:2px;text-underline-offset:4px}
+.tip{position:absolute;z-index:5;max-width:min(320px,80vw);background:var(--ink);color:var(--surface);border-radius:12px;padding:10px 12px;font-size:13.5px;line-height:1.6;box-shadow:0 8px 24px rgba(0,0,0,.25);display:grid;gap:6px}
+.tip b{font-family:var(--f-display)}
+.tip button{justify-self:start;font:inherit;font-size:12px;border:1px solid var(--surface);color:var(--surface);background:none;border-radius:6px;padding:2px 8px;cursor:pointer}
+.sheet-in{position:relative}
 </style>
 
 <div class="wrap">
@@ -559,6 +564,25 @@ function speakStory(s){
     speaking = s.id; speechSynthesis.speak(u); renderSheet();
   } catch(e){ speaking = null; }
 }
+function termKey(t){ return String(t).replace(/[（(].*$/, '').trim(); }
+function withTerms(html, s, used){
+  (s.terms||[]).forEach(t => { const k = esc(termKey(t.term)); if(k.length < 2 || used.has(k)) return;
+    const i = html.indexOf(k); if(i < 0) return;
+    const before = html.slice(0, i); if(before.lastIndexOf('<') > before.lastIndexOf('>')) return;
+    used.add(k); html = before + `<button class="tw" type="button" data-tw="${esc(t.term)}">${k}</button>` + html.slice(i + k.length); });
+  return html;
+}
+function showTip(btn){
+  const s = D.stories.find(x => x.id === openId); const t = s && s.terms.find(x => x.term === btn.dataset.tw); if(!t) return;
+  hideTip();
+  const host = $('#sheetin'), r = btn.getBoundingClientRect(), h = host.getBoundingClientRect();
+  const tip = document.createElement('div'); tip.className = 'tip'; tip.id = 'tip';
+  tip.innerHTML = `<span><b>${esc(t.term)}</b>　${esc(t.def)}</span><button type="button" data-word="${esc(t.term)}" data-def="${esc(t.def)}" data-story="${esc(s.id)}">${hasWord(t.term)?'単語帳に入っています':'単語帳に入れる'}</button>`;
+  host.appendChild(tip);
+  const left = Math.max(8, Math.min(r.left - h.left, h.width - tip.offsetWidth - 8));
+  tip.style.left = left + 'px'; tip.style.top = (r.bottom - h.top + 6) + 'px';
+}
+function hideTip(){ const t = $('#tip'); if(t) t.remove(); }
 function nextHTML(s){
   const order = (tileOrder.length ? tileOrder : D.stories.map(x => x.id)).map(id => D.stories.find(x => x.id === id)).filter(Boolean);
   const i = order.findIndex(x => x.id === s.id);
@@ -576,7 +600,7 @@ function renderSheet(){
       `<button class="qopt${a!=null && i===qz.answer?' right':''}${justRight===qkey(s) && i===qz.answer?' fresh':''}${a===i && i!==qz.answer?' wrong':''}" type="button" data-quiz="${i}" ${a!=null?'disabled':''}>${'ABC'[i]}　${esc(c)}</button>`).join('')}</div>
       ${justRight === qkey(s) ? '<span class="burst" aria-hidden="true">🎉</span>' : ''}
       ${a!=null ? `<div class="qres"><b>${a===qz.answer?'◎ 正解！':'△ 正解は '+'ABC'[qz.answer]+' でした'}</b>　${esc(qz.explain)}</div>` : '<div class="lock">予想して選ぶと、何が起きたのかが開きます</div>'}</div>` : '';
-  const term = s.terms.find(t => t.term === openTerm);
+  const term = s.terms.find(t => t.term === openTerm), used = new Set();
   $('#sheetin').dataset.r = s.region;
   $('#sheetin').innerHTML = `<article class="story" data-id="${esc(s.id)}">
     <div class="sh-hero"><button class="x" type="button" data-close="1" aria-label="閉じる">×</button>
@@ -590,12 +614,12 @@ function renderSheet(){
     <div class="sh-body">
       ${quiz}
       ${answered ? `
-      <div class="sec"><h3>なにが起きた？</h3><div class="points">${s.points.map(p => `<p>${applyMarks(esc(p))}</p>`).join('')}</div></div>
+      <div class="sec"><h3>なにが起きた？</h3><div class="points">${s.points.map(p => `<p>${withTerms(applyMarks(esc(p)), s, used)}</p>`).join('')}</div></div>
       ${s.fig ? `<div class="sec"><h3>登場人物</h3>${figHTML(s.fig)}</div>` : ''}
       ${s.flow ? `<div class="sec"><h3>ここまでの流れ</h3>${figHTML({kind:'flow', steps:s.flow})}</div>` : ''}
       <div class="sec" id="tl-${esc(s.id)}" hidden><h3>前の号からの続き</h3><div class="tl"></div></div>
       ${linksHTML(s)}
-      <div class="sec"><h3>そもそも、どういう話？</h3><div class="bg"><p style="margin:0">${applyMarks(esc(s.background))}</p></div></div>
+      <div class="sec"><h3>そもそも、どういう話？</h3><div class="bg"><p style="margin:0">${withTerms(applyMarks(esc(s.background)), s, used)}</p></div></div>
       ${s.why ? `<div class="sec"><h3>わたしに関係ある？</h3><p style="margin:0">${applyMarks(esc(s.why))}</p></div>` : ''}
       <div class="sec"><h3>どんな立場の媒体が報じた？</h3>${spectrumHTML(s)}<ul class="angles">${s.angles.map(x => `<li>${applyMarks(esc(x))}</li>`).join('')}</ul></div>
       <div class="sec"><h3>出てきたことば（押すと意味）</h3><div class="chips">${s.terms.map(t => `<button class="tchip" type="button" data-term="${esc(t.term)}" aria-expanded="${t.term===openTerm}">${esc(t.term)}</button>`).join('')}</div>
@@ -616,7 +640,8 @@ function renderSheet(){
   if(answered) loadThread(s);
 }
 function onStoryClick(e){
-  const b = e.target.closest('button'); if(!b) return;
+  const b = e.target.closest('button'); if(!b || !b.dataset.tw) hideTip(); if(!b) return;
+  if(b.dataset.tw){ e.stopPropagation(); if($('#tip') && $('#tip').dataset.for === b.dataset.tw){ hideTip(); return; } showTip(b); if($('#tip')) $('#tip').dataset.for = b.dataset.tw; return; }
   if(b.dataset.open){ openSheet(b.dataset.open); return; }
   if(b.dataset.close){ closeSheet(); return; }
   if(b.dataset.next){ openSheet(b.dataset.next); return; }
