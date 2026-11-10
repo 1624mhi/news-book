@@ -117,6 +117,24 @@ nav.filters{position:static}
 .archive a small{color:var(--muted);font-family:var(--f-mono)}
 .archive a span{display:block;font-size:13px;color:var(--muted)}
 .known{font-size:11px;border-radius:999px;padding:1px 8px;background:var(--accent-soft);color:var(--accent);justify-self:start}
+/* ---- サクッと（スワイプ） ---- */
+.swipe{display:grid;gap:14px;padding-block:20px;justify-items:center}
+.deck{position:relative;width:100%;max-width:440px;height:min(62vh,520px);min-height:380px}
+.scard{position:absolute;inset:0;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:22px 22px 18px;display:flex;flex-direction:column;gap:12px;box-shadow:0 6px 24px rgba(0,0,0,.08);touch-action:pan-y;user-select:none;-webkit-user-select:none;overflow:hidden;cursor:grab}
+.scard.back{transform:scale(.95) translateY(12px);opacity:.7;pointer-events:none}
+.scard.anim{transition:transform .28s ease,opacity .28s ease}
+.scard h2{font-size:21px}
+.scard .lead{font-size:15px;line-height:1.75;margin:0}
+.scard .kt{margin-top:auto;border-top:1px dashed var(--line);padding-top:10px;font-size:13px;color:var(--muted)}
+.scard .kt b{color:var(--ink);font-family:var(--f-display)}
+.stamp{position:absolute;top:64px;z-index:2;background:var(--surface);font-family:var(--f-display);font-weight:700;font-size:18px;padding:2px 10px;border-radius:6px;border:2px solid;opacity:0;transform:rotate(-8deg)}
+.stamp.yes{left:18px;color:var(--my);border-color:var(--my)}
+.stamp.no{right:18px;color:var(--muted);border-color:var(--muted);transform:rotate(8deg)}
+.sbtns{display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
+.sbtns button{font:inherit;font-weight:700;font-size:14px;border-radius:999px;padding:10px 18px;cursor:pointer;border:1px solid var(--line);background:var(--surface);color:var(--ink)}
+.sbtns .keep{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.sprog{font-family:var(--f-mono);font-size:12px;color:var(--muted)}
+.shint{font-size:12px;color:var(--muted);text-align:center}
 </style>
 
 <div class="wrap">
@@ -126,13 +144,26 @@ nav.filters{position:static}
     <p class="lede">日本・世界・マレーシアの<span id="nOutlets"></span>媒体のトップ記事から、複数の媒体が取り上げた話題を毎朝8時に選んでいます。</p>
   </header>
   <nav class="appnav" aria-label="画面">
+    <a href="#swipe" data-v="swipe">サクッと</a>
     <a href="#today" data-v="today">今日のニュース</a>
     <a href="#words" data-v="words">単語帳</a>
     <a href="#review" data-v="review">ふりかえり</a>
     <a href="#archive" data-v="archive">過去の号</a>
   </nav>
 
-  <section id="v-today">
+  <section id="v-swipe" class="swipe" hidden>
+    <nav class="filters" aria-label="分野で絞り込む" id="stabs" style="justify-content:center;border:0;padding-block:0"></nav>
+    <div class="sprog" id="sprog"></div>
+    <div class="deck" id="deck"></div>
+    <div class="sbtns" id="sbtns">
+      <button type="button" data-s="skip">← とばす</button>
+      <button type="button" data-s="more">くわしく</button>
+      <button type="button" data-s="keep" class="keep">あとで読む →</button>
+    </div>
+    <p class="shint">右にスワイプで「あとで読む」に保存、左でとばす。キーボードの ← → でも操作できます。</p>
+  </section>
+
+  <section id="v-today" hidden>
     <div class="datebar"><label for="edsel" class="sync">号</label><select id="edsel"></select><span class="sync" id="sync"></span></div>
     <nav class="filters" aria-label="地域で絞り込む" id="filters"></nav>
     <main id="stories"></main>
@@ -293,6 +324,7 @@ function renderEdition(){
   $('#date').textContent = D.date.replace(/-/g,'.') + '　取得 ' + t.toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit',timeZone:'Asia/Kuala_Lumpur'}) + '（マレーシア時間）';
   $('#nOutlets').textContent = D.status.filter(s => s.ok && s.fresh > 0).length;
   renderEditionSelect(); renderFilters(); renderStories(); renderTops();
+  if(!$('#v-swipe').hidden) renderSwipe();
 }
 const MANUAL=[['朝日新聞','https://www.asahi.com/'],['毎日新聞','https://mainichi.jp/'],['読売新聞','https://www.yomiuri.co.jp/'],['日本経済新聞','https://www.nikkei.com/'],['東京新聞','https://www.tokyo-np.co.jp/'],['共同通信 47NEWS','https://www.47news.jp/'],['時事通信','https://www.jiji.com/'],['NYT','https://www.nytimes.com/'],['NPR','https://www.npr.org/'],['Guardian','https://www.theguardian.com/'],['Reuters','https://www.reuters.com/'],['AP','https://apnews.com/'],['France 24','https://www.france24.com/en/'],['CNA','https://www.channelnewsasia.com/'],['Nikkei Asia','https://asia.nikkei.com/'],['New Straits Times','https://www.nst.com.my/']];
 $('#manual').innerHTML = MANUAL.map(([n,u])=>`<a href="${u}" target="_blank" rel="noopener">${n}</a>`).join('　');
@@ -379,14 +411,92 @@ function renderArchive(){
 }
 $('#arch').addEventListener('click', e => { const a=e.target.closest('a'); if(a && a.dataset.go) openEdition(a.dataset.go); });
 
+
+/* ---------- サクッと（スワイプ） ---------- */
+let si = 0, sdate = null, kept = 0, stab = 'すべて';
+const STABS = ['すべて','日本','マレーシア','世界','経済'];
+function swipeList(){
+  return D.stories.filter(s => stab==='すべて' || (stab==='経済' ? /経済|ビジネス|市場|金融/.test(s.cat) : s.region===stab));
+}
+function renderStabs(){
+  $('#stabs').innerHTML = STABS.map(t => { const n = t==='すべて' ? D.stories.length : (() => { const k = stab; stab = t; const c = swipeList().length; stab = k; return c; })();
+    return `<button class="chip" type="button" data-st="${t}" aria-pressed="${t===stab}">${t} ${n}</button>`; }).join('');
+}
+function shortText(t, n){ t = String(t||''); return t.length > n ? t.slice(0, n) + '…' : t; }
+function cardHTML(s, cls){
+  const t = s.terms && s.terms[0];
+  const outlets = new Set(s.headlines.map(h => h.outlet)).size;
+  return `<div class="scard ${cls}" data-id="${esc(s.id)}"><span class="stamp yes">あとで読む</span><span class="stamp no">とばす</span>
+    <div class="meta"><span class="reg" data-r="${esc(s.region)}">${esc(s.region)}</span><span>${esc(s.cat)}</span><span class="count">${outlets}媒体</span></div>
+    <h2>${esc(s.title)}</h2><p class="lead">${esc(shortText(s.points[0], 120))}</p>
+    ${t ? `<div class="kt">今日の用語　<b>${esc(t.term)}</b>：${esc(shortText(t.def, 60))}</div>` : ''}</div>`;
+}
+function renderSwipe(){
+  if(sdate !== D.date){ sdate = D.date; si = 0; kept = 0; }
+  renderStabs();
+  const list = swipeList(), deck = $('#deck');
+  $('#sprog').textContent = si < list.length ? `${D.date.replace(/-/g,'.')}　${si+1}／${list.length}` : '';
+  $('#sbtns').hidden = si >= list.length;
+  if(si >= list.length){
+    deck.innerHTML = `<div class="scard" style="cursor:default;justify-content:center;align-items:center;text-align:center">
+      <h2>${stab==='すべて'?'今朝の':stab+'の'}${list.length}話題を見終わりました</h2><p class="lead">「あとで読む」にしたのは ${kept} 件です。</p>
+      <div class="sbtns"><button type="button" class="keep" data-s="read">保存した話題を読む</button><button type="button" data-s="again">もう一度</button></div></div>`;
+    return;
+  }
+  deck.innerHTML = (list[si+1] ? cardHTML(list[si+1], 'back') : '') + cardHTML(list[si], 'front');
+  bindDrag(deck.querySelector('.front'));
+}
+function swipeDone(dir){
+  const s = swipeList()[si]; if(!s) return;
+  if(dir === 'keep'){ if(!isBm(s.id)){ st.bookmarks.push({id:s.id, title:s.title, date:D.date, savedAt:today()}); save(); } kept++; }
+  const card = $('#deck .front');
+  if(card){ card.classList.add('anim'); card.style.transform = `translateX(${dir==='keep'?120:-120}%) rotate(${dir==='keep'?18:-18}deg)`; card.style.opacity = '0'; }
+  si++; setTimeout(renderSwipe, 230);
+}
+function openStory(id){ filter = 'すべて'; location.hash = '#today'; setTimeout(() => { const el = document.getElementById('s-'+id); if(el) el.scrollIntoView({behavior:'smooth', block:'start'}); }, 60); }
+function bindDrag(card){
+  if(!card) return;
+  let x0 = null, y0 = 0, dx = 0, moved = false;
+  const yes = card.querySelector('.stamp.yes'), no = card.querySelector('.stamp.no');
+  card.addEventListener('pointerdown', e => { x0 = e.clientX; y0 = e.clientY; dx = 0; moved = false; card.setPointerCapture(e.pointerId); card.classList.remove('anim'); });
+  card.addEventListener('pointermove', e => {
+    if(x0 === null) return; dx = e.clientX - x0;
+    if(Math.abs(dx) > 6) moved = true;
+    card.style.transform = `translateX(${dx}px) rotate(${dx/18}deg)`;
+    yes.style.opacity = Math.max(0, Math.min(1, dx/90)); no.style.opacity = Math.max(0, Math.min(1, -dx/90));
+  });
+  const end = () => {
+    if(x0 === null) return; x0 = null;
+    if(dx > 90) return swipeDone('keep');
+    if(dx < -90) return swipeDone('skip');
+    card.classList.add('anim'); card.style.transform = ''; yes.style.opacity = 0; no.style.opacity = 0;
+    if(!moved) openStory(card.dataset.id);
+  };
+  card.addEventListener('pointerup', end); card.addEventListener('pointercancel', end);
+}
+$('#v-swipe').addEventListener('click', e => {
+  const b = e.target.closest('button'); if(!b) return;
+  if(b.dataset.s === 'keep' || b.dataset.s === 'skip') swipeDone(b.dataset.s);
+  if(b.dataset.st){ stab = b.dataset.st; si = 0; kept = 0; renderSwipe(); return; }
+  if(b.dataset.s === 'more' && swipeList()[si]) openStory(swipeList()[si].id);
+  if(b.dataset.s === 'again'){ si = 0; kept = 0; renderSwipe(); }
+  if(b.dataset.s === 'read'){ filter = '★'; location.hash = '#today'; }
+});
+addEventListener('keydown', e => {
+  if($('#v-swipe').hidden || e.target.closest('input,textarea,select')) return;
+  if(e.key === 'ArrowRight') swipeDone('keep');
+  if(e.key === 'ArrowLeft') swipeDone('skip');
+});
+
 /* ---------- 画面切り替え ---------- */
-const VIEWS = ['today','words','review','archive'];
+const VIEWS = ['swipe','today','words','review','archive'];
 function route(){
-  const v = VIEWS.includes(location.hash.slice(1)) ? location.hash.slice(1) : 'today';
+  const v = VIEWS.includes(location.hash.slice(1)) ? location.hash.slice(1) : 'swipe';
   VIEWS.forEach(x => { $('#v-'+x).hidden = x !== v; });
   document.querySelectorAll('.appnav a').forEach(a => a.setAttribute('aria-current', a.dataset.v===v ? 'page' : 'false'));
   if(v==='words') renderWords(); if(v==='review') renderReview(); if(v==='archive') renderArchive();
-  if(v==='today') renderStories();
+  if(v==='today'){ renderFilters(); renderStories(); }
+  if(v==='swipe') renderSwipe();
 }
 addEventListener('hashchange', () => { route(); scrollTo(0,0); });
 renderEdition(); route();
