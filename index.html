@@ -286,6 +286,8 @@ body.noscroll{overflow:hidden}
 .linkbtn .e{font-size:22px}
 .linkbtn small{display:block;color:var(--rc);font-size:12px;font-weight:700}
 .linkbtn b{font-size:14px;line-height:1.45}
+@media (max-width:520px){header.top{padding-block:18px 4px;gap:2px}h1{font-size:22px}.lede{font-size:12.5px;line-height:1.6}}
+@media (max-width:560px){.pin{min-width:18px;height:18px;font-size:10px;padding:0 3px}.pin .pe{font-size:11px}}
 </style>
 
 <div class="wrap">
@@ -458,7 +460,7 @@ function renderMap(){
   pgroups = {};
   D.stories.filter(s => s.place).forEach(s => {
     const x = mx(s.place[2]), y = my(s.place[1]) * MAPH / MAPW;
-    let g = [...ps.values()].find(g => Math.hypot(g.x - x, g.y - y) < 3.5);
+    let g = [...ps.values()].find(g => Math.hypot(g.x - x, g.y - y) < (innerWidth < 560 ? 6 : 3.5));
     if(!g){ g = {name:s.place[0], names:[], lat:s.place[1], lon:s.place[2], x, y, list:[]}; ps.set(g.name, g); }
     if(!g.names.includes(s.place[0])) g.names.push(s.place[0]);
     g.list.push(s);
@@ -511,10 +513,11 @@ function renderStories(){
 }
 let openId = null, openTerm = null, tileOrder = [], justRight = null;
 function openSheet(id){
+  try{ if(speaking && speaking !== id){ speechSynthesis.cancel(); speaking = null; } }catch(e){}
   openId = id; openTerm = null; renderSheet(); $('#sheet').hidden = false; $('#sheet').scrollTop = 0;
   document.body.classList.add('noscroll'); const x = $('#sheet .x'); if(x) x.focus({preventScroll:true});
 }
-function closeSheet(){ openId = null; $('#sheet').hidden = true; document.body.classList.remove('noscroll'); }
+function closeSheet(){ try{ if(speaking){ speechSynthesis.cancel(); speaking = null; } }catch(e){} openId = null; $('#sheet').hidden = true; document.body.classList.remove('noscroll'); }
 $('#sheet').addEventListener('click', e => { if(e.target.id === 'sheet') closeSheet(); });
 document.addEventListener('keydown', e => { if(e.key === 'Escape' && openId) closeSheet(); });
 function spectrumHTML(s){
@@ -539,6 +542,22 @@ function linksHTML(s){
   const ls = (s.links||[]).map(([id, why]) => [D.stories.find(x => x.id === id), why]).filter(x => x[0]);
   if(!ls.length) return '';
   return `<div class="sec"><h3>この話とつながっている話</h3><div class="links">${ls.map(([x, why]) => `<button class="linkbtn" type="button" data-next="${esc(x.id)}"><span class="e">${esc(x.emoji||'📰')}</span><span><small>🔗 ${esc(why)}</small><b>${esc(x.hook||x.title)}</b></span></button>`).join('')}</div></div>`;
+}
+let speaking = null;
+function speakStory(s){
+  try{
+    speechSynthesis.cancel();
+    if(speaking === s.id){ speaking = null; renderSheet(); return; }
+    const answered = !s.quiz || st.quiz[qkey(s)] != null;
+    const parts = [s.hook || s.title];
+    if(s.quiz && !answered) parts.push('まずはクイズ。' + s.quiz.q + ' ' + s.quiz.choices.map((c,i)=>'ABC'[i]+'、'+c).join('。'));
+    else parts.push(...s.points, 'そもそも。' + s.background, s.why ? 'わたしに関係ある？ ' + s.why : '');
+    const u = new SpeechSynthesisUtterance(parts.filter(Boolean).join('。 ').replace(/。。/g,'。'));
+    u.lang = 'ja-JP'; u.rate = 1.05;
+    const v = speechSynthesis.getVoices().find(v => /^ja/i.test(v.lang)); if(v) u.voice = v;
+    u.onend = u.onerror = () => { if(speaking === s.id){ speaking = null; if(openId === s.id) renderSheet(); } };
+    speaking = s.id; speechSynthesis.speak(u); renderSheet();
+  } catch(e){ speaking = null; }
 }
 function nextHTML(s){
   const order = (tileOrder.length ? tileOrder : D.stories.map(x => x.id)).map(id => D.stories.find(x => x.id === id)).filter(Boolean);
@@ -566,7 +585,8 @@ function renderSheet(){
       <h2>${esc(s.hook||s.title)}</h2>${s.hook?`<p class="sub">${esc(s.title)}</p>`:''}
       ${miniMap(s)}
       <div class="sh-acts">${s.thread?`<button class="pill" type="button" data-follow="${esc(s.thread)}" aria-pressed="${isFol(s)}">${isFol(s)?'✓ 追いかけ中':'＋ この話を追いかける'}</button>`:''}
-        <button class="pill" type="button" data-bm="${esc(s.id)}" aria-pressed="${isBm(s.id)}">${isBm(s.id)?'★ 保存済み':'☆ 保存'}</button></div></div>
+        <button class="pill" type="button" data-bm="${esc(s.id)}" aria-pressed="${isBm(s.id)}">${isBm(s.id)?'★ 保存済み':'☆ 保存'}</button>
+        ${'speechSynthesis' in window ? `<button class="pill" type="button" data-speak="${esc(s.id)}" aria-pressed="${speaking===s.id}">${speaking===s.id?'■ 止める':'🔊 読み上げ'}</button>` : ''}</div></div>
     <div class="sh-body">
       ${quiz}
       ${answered ? `
@@ -601,6 +621,7 @@ function onStoryClick(e){
   if(b.dataset.close){ closeSheet(); return; }
   if(b.dataset.next){ openSheet(b.dataset.next); return; }
   const s = D.stories.find(x => x.id === openId);
+  if(b.dataset.speak && s){ speakStory(s); return; }
   if(b.dataset.quiz && s){ st.quiz[qkey(s)] = +b.dataset.quiz; justRight = +b.dataset.quiz === s.quiz.answer ? qkey(s) : null; save(); renderStories(); justRight = null; return; }
   if(b.dataset.op && s){ const c = s.opinion.choices[+b.dataset.op];
     st.opinions = st.opinions.filter(o => !(o.date===D.date && o.id===s.id));
