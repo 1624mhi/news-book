@@ -267,6 +267,19 @@ body.noscroll{overflow:hidden}
 .minimap svg{position:absolute;inset:0;width:100%;height:100%}
 .minimap i{position:absolute;width:10px;height:10px;border-radius:50%;background:var(--rc);transform:translate(-50%,-50%);box-shadow:0 0 0 4px color-mix(in srgb,var(--rc) 35%,transparent)}
 .placeline{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;font-size:12.5px;color:var(--muted)}
+.nextbox{display:grid;gap:6px;border-top:1px dashed var(--line);padding-top:16px}
+.nextbtn{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;text-align:left;font:inherit;color:var(--ink);background:var(--bg);border:1.5px solid var(--line);border-radius:14px;padding:12px 14px;cursor:pointer}
+.nextbtn:hover{border-color:var(--rc)}
+.nextbtn .e{font-size:28px}
+.nextbtn b{font-family:var(--f-display);font-size:15px;line-height:1.45}
+.nextbtn small{display:block;color:var(--muted);font-size:12px}
+.quiz{position:relative}
+.burst{position:absolute;right:14px;top:6px;font-size:28px;pointer-events:none;animation:burst 1.1s ease-out forwards}
+@keyframes burst{0%{transform:scale(.3) translateY(0);opacity:0}25%{transform:scale(1.25) translateY(-6px);opacity:1}100%{transform:scale(1) translateY(-34px);opacity:0}}
+.qopt.right.fresh{animation:okpulse .6s ease-out}
+@keyframes okpulse{0%{transform:scale(1)}40%{transform:scale(1.03)}100%{transform:scale(1)}}
+@media (prefers-reduced-motion: reduce){.burst{animation:none;opacity:0}.qopt.right.fresh{animation:none}}
+.alldone{flex-basis:100%;font-weight:700;color:var(--my)}
 </style>
 
 <div class="wrap">
@@ -483,13 +496,14 @@ function renderStories(){
   if(filter !== '★' && !placeF && list.length > 2){ hero = list.reduce((a,b) => cnt(b) > cnt(a) ? b : a); list = list.filter(x => x !== hero); }
   list = list.filter(isFol).concat(list.filter(s => !isFol(s)));
   if(hero) list.unshift(hero);
+  tileOrder = list.map(x => x.id);
   $('#stories').innerHTML = list.length ? list.map(x => tileHTML(x, x === hero)).join('') : `<p class="empty">まだ保存した話題はありません。話題を開いて「☆ 保存」を押すとここに集まります。</p>`;
   const qs = D.stories.filter(s => s.quiz), done = qs.filter(s => st.quiz[qkey(s)] != null), ok = done.filter(s => st.quiz[qkey(s)] === s.quiz.answer);
   $('#score').hidden = !qs.length;
-  $('#score').innerHTML = `<b>${ok.length}／${done.length}</b><span>今日の予想の的中（全${qs.length}問）</span><span class="streak">${streakText()}</span><span>追いかけ中の話題 ${st.follows.length}</span><span>あなたの意見 ${st.opinions.length}件</span>`;
+  $('#score').innerHTML = `<b>${ok.length}／${done.length}</b><span>今日の予想の的中（全${qs.length}問）</span><span class="streak">${streakText()}</span><span>追いかけ中の話題 ${st.follows.length}</span><span>あなたの意見 ${st.opinions.length}件</span>${qs.length && done.length === qs.length ? `<span class="alldone">🎉 今日の予想を全部終えました！ 次の号は明日の朝8時に届きます。</span>` : ''}`;
   if(openId) renderSheet();
 }
-let openId = null, openTerm = null;
+let openId = null, openTerm = null, tileOrder = [], justRight = null;
 function openSheet(id){
   openId = id; openTerm = null; renderSheet(); $('#sheet').hidden = false; $('#sheet').scrollTop = 0;
   document.body.classList.add('noscroll'); const x = $('#sheet .x'); if(x) x.focus({preventScroll:true});
@@ -515,11 +529,22 @@ async function loadThread(s){
   box.hidden = false;
   box.querySelector('.tl').innerHTML = past.map(p => `<div><small>${esc(p.date.replace(/-/g,'.'))}</small>${esc(p.title)}${p.op?`<small>そのときのあなた：${esc(p.op.choice)}</small>`:''}</div>`).join('') + `<div class="now"><small>${esc(D.date.replace(/-/g,'.'))}　きょう</small>${esc(s.title)}</div>`;
 }
+function nextHTML(s){
+  const order = (tileOrder.length ? tileOrder : D.stories.map(x => x.id)).map(id => D.stories.find(x => x.id === id)).filter(Boolean);
+  const i = order.findIndex(x => x.id === s.id);
+  const rest = order.slice(i + 1).concat(order.slice(0, Math.max(i, 0)));
+  const nx = rest.find(x => x.quiz && st.quiz[qkey(x)] == null) || rest[0];
+  if(!nx) return '';
+  const left = order.filter(x => x.quiz && st.quiz[qkey(x)] == null).length;
+  return `<div class="nextbox"><small style="color:var(--muted)">${left ? `まだ予想していない話があと${left}本` : '今日の話はぜんぶ予想しました'}</small>
+    <button class="nextbtn" type="button" data-next="${esc(nx.id)}"><span class="e">${esc(nx.emoji||'📰')}</span><span><small>次の話へ</small><b>${esc(nx.hook||nx.title)}</b></span><span>→</span></button></div>`;
+}
 function renderSheet(){
   const s = D.stories.find(x => x.id === openId); if(!s){ closeSheet(); return; }
   const n = new Set(s.headlines.map(h => h.outlet)).size, a = st.quiz[qkey(s)], qz = s.quiz, answered = !qz || a != null, op = myOp(s);
   const quiz = qz ? `<div class="quiz"><div class="q">🤔 ${esc(qz.q)}</div><div class="qopts">${qz.choices.map((c,i) =>
-      `<button class="qopt${a!=null && i===qz.answer?' right':''}${a===i && i!==qz.answer?' wrong':''}" type="button" data-quiz="${i}" ${a!=null?'disabled':''}>${'ABC'[i]}　${esc(c)}</button>`).join('')}</div>
+      `<button class="qopt${a!=null && i===qz.answer?' right':''}${justRight===qkey(s) && i===qz.answer?' fresh':''}${a===i && i!==qz.answer?' wrong':''}" type="button" data-quiz="${i}" ${a!=null?'disabled':''}>${'ABC'[i]}　${esc(c)}</button>`).join('')}</div>
+      ${justRight === qkey(s) ? '<span class="burst" aria-hidden="true">🎉</span>' : ''}
       ${a!=null ? `<div class="qres"><b>${a===qz.answer?'◎ 正解！':'△ 正解は '+'ABC'[qz.answer]+' でした'}</b>　${esc(qz.explain)}</div>` : '<div class="lock">予想して選ぶと、何が起きたのかが開きます</div>'}</div>` : '';
   const term = s.terms.find(t => t.term === openTerm);
   $('#sheetin').dataset.r = s.region;
@@ -553,6 +578,7 @@ function renderSheet(){
         <button class="btn" type="button" data-ask="${esc(s.id)}" data-preset="この話題をもっと深く理解するために、知っておくべき歴史的な経緯を3つ教えて">歴史的な経緯は？</button>
         <button class="btn" type="button" data-ask="${esc(s.id)}" data-preset="この話題は日本とマレーシアの暮らしにどう関係する？">私の生活との関係は？</button></div>
         <div class="answer" id="a-${esc(s.id)}" hidden></div></div>` : ''}
+      ${nextHTML(s)}
       ` : ''}
     </div></article>`;
   if(answered) loadThread(s);
@@ -561,8 +587,9 @@ function onStoryClick(e){
   const b = e.target.closest('button'); if(!b) return;
   if(b.dataset.open){ openSheet(b.dataset.open); return; }
   if(b.dataset.close){ closeSheet(); return; }
+  if(b.dataset.next){ openSheet(b.dataset.next); return; }
   const s = D.stories.find(x => x.id === openId);
-  if(b.dataset.quiz && s){ st.quiz[qkey(s)] = +b.dataset.quiz; save(); renderStories(); return; }
+  if(b.dataset.quiz && s){ st.quiz[qkey(s)] = +b.dataset.quiz; justRight = +b.dataset.quiz === s.quiz.answer ? qkey(s) : null; save(); renderStories(); justRight = null; return; }
   if(b.dataset.op && s){ const c = s.opinion.choices[+b.dataset.op];
     st.opinions = st.opinions.filter(o => !(o.date===D.date && o.id===s.id));
     st.opinions.push({date:D.date, id:s.id, title:s.title, thread:s.thread||'', q:s.opinion.q, choice:c, savedAt:today()}); save(); renderStories(); return; }
@@ -754,7 +781,7 @@ function cardHTML(s, cls){
 }
 function swipeQuiz(s){
   const qz = s.quiz, a = st.quiz[qkey(s)];
-  return `<div class="quiz"><div class="q">🤔 ${esc(qz.q)}</div><div class="qopts">${qz.choices.map((c,i) =>
+  return `<div class="quiz">${justRight===qkey(s)?'<span class="burst" aria-hidden="true">🎉</span>':''}<div class="q">🤔 ${esc(qz.q)}</div><div class="qopts">${qz.choices.map((c,i) =>
     `<button class="qopt${a!=null && i===qz.answer?' right':''}${a===i && i!==qz.answer?' wrong':''}" type="button" data-sq="${i}" ${a!=null?'disabled':''}>${'ABC'[i]}　${esc(c)}</button>`).join('')}</div>
     ${a!=null ? `<div class="qres"><b>${a===qz.answer?'◎ 正解！':'△ 正解は '+'ABC'[qz.answer]}</b>　${esc(shortText(qz.explain, 70))}</div>` : ''}</div>`;
 }
@@ -803,7 +830,7 @@ function bindDrag(card){
 }
 $('#v-swipe').addEventListener('click', e => {
   const b = e.target.closest('button'); if(!b) return;
-  if(b.dataset.sq){ const s = swipeList()[si]; if(s && s.quiz && st.quiz[qkey(s)] == null){ st.quiz[qkey(s)] = +b.dataset.sq; save(); renderSwipe(); } return; }
+  if(b.dataset.sq){ const s = swipeList()[si]; if(s && s.quiz && st.quiz[qkey(s)] == null){ st.quiz[qkey(s)] = +b.dataset.sq; justRight = +b.dataset.sq === s.quiz.answer ? qkey(s) : null; save(); renderSwipe(); justRight = null; } return; }
   if(b.dataset.s === 'keep' || b.dataset.s === 'skip') swipeDone(b.dataset.s);
   if(b.dataset.st){ stab = b.dataset.st; si = 0; kept = 0; renderSwipe(); return; }
   if(b.dataset.s === 'more' && swipeList()[si]) openStory(swipeList()[si].id);
