@@ -229,9 +229,29 @@ body.noscroll{overflow:hidden}
 .scard .fnode{min-width:70px;padding:6px}
 .scard .fnode .e{font-size:22px}
 .scard .fstep{padding:5px 10px;font-size:13px}
-.scard .emo{font-size:34px;line-height:1}
+.scard .emo{font-size:30px;line-height:1}
 .scard .easy{font-size:15.5px;line-height:1.75;margin:0}
 .sheet-in article.story{display:block;padding:0;border:0;border-radius:0;background:none}
+.tile.hero{grid-column:1/-1;grid-template-columns:auto 1fr;column-gap:18px;padding:18px 20px}
+.tile.hero .t-top,.tile.hero .t-state{grid-column:1/-1}
+.tile.hero .t-emo{font-size:56px;grid-row:2/4;align-self:center}
+.tile.hero .t-hook{font-size:clamp(19px,3.4vw,24px)}
+.tile.hero .t-title{grid-column:2}
+.herolabel{background:var(--ink);color:var(--surface);border-radius:999px;padding:0 8px;font-weight:700}
+.streak{font-family:var(--f-display);font-weight:700;color:var(--jp)}
+.scard .quiz{padding:10px 12px;gap:6px;background:var(--bg)}
+.scard .quiz .q{font-size:15px}
+.scard .qopt{padding:7px 12px;font-size:14px}
+.scard .qres{font-size:13.5px;line-height:1.65}
+.zukan{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px}
+.zcard{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 14px;display:grid;gap:4px;align-content:start}
+.zcard .e{font-size:30px;line-height:1.1}
+.zcard b{font-family:var(--f-display);font-size:15px}
+.zcard ul{margin:0;padding-left:1.1em;font-size:12.5px;line-height:1.6;color:var(--muted)}
+.zcard .n{font-family:var(--f-mono);font-size:11px;color:var(--muted)}
+.miss{display:grid;gap:4px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.miss .q{font-weight:700}
+.miss small{color:var(--muted)}
 </style>
 
 <div class="wrap">
@@ -291,6 +311,7 @@ body.noscroll{overflow:hidden}
     <h2>今週のふりかえり</h2>
     <div class="stats" id="rstats"></div>
     <div id="rcard"></div>
+    <div><h3>はずれた予想に再挑戦</h3><div class="list" id="rmiss"></div></div>
     <div><h3>あなたが選んだ意見</h3><div class="list" id="rop"></div></div>
     <div><h3>今週保存した話題</h3><div class="list" id="rbm"></div></div>
   </section>
@@ -397,22 +418,35 @@ const leanOf = l => /国営|政府|共産党系/.test(l) ? 3 : /保守|右派|�
 const qkey = s => D.date + '|' + s.id;
 const isFol = s => !!s.thread && st.follows.includes(s.thread);
 const myOp = s => st.opinions.find(o => o.date===D.date && o.id===s.id);
-function tileHTML(s){
+function ymd(d){ return d.toLocaleDateString('sv-SE',{timeZone:'Asia/Kuala_Lumpur'}); }
+function streak(){
+  const days = new Set(Object.keys(st.quiz).map(k => k.split('|')[0]));
+  const d = new Date(); let n = 0;
+  if(!days.has(ymd(d))) d.setDate(d.getDate()-1);
+  while(days.has(ymd(d))){ n++; d.setDate(d.getDate()-1); }
+  return {n, today: days.has(today())};
+}
+function streakText(){ const k = streak(); return k.n ? `🔥 ${k.n}日連続で予想中${k.today?'':'（今日も答えると'+(k.n+1)+'日）'}` : '🔥 予想を1問答えると連続記録がはじまります'; }
+function tileHTML(s, hero){
   const n = new Set(s.headlines.map(h => h.outlet)).size, a = st.quiz[qkey(s)];
   const state = !s.quiz ? '読む →' : a==null ? '予想してから読む →' : (a===s.quiz.answer ? '◎ 予想的中' : '△ 予想はずれ');
-  return `<button class="tile" type="button" data-open="${esc(s.id)}" data-r="${esc(s.region)}">
-    <span class="t-top"><span class="reg">${esc(s.region)}</span>${isFol(s)?'<span class="fol">追いかけ中</span>':''}${isBm(s.id)?'<span>★</span>':''}<span class="t-n">${n}媒体</span></span>
+  return `<button class="tile${hero?' hero':''}" type="button" data-open="${esc(s.id)}" data-r="${esc(s.region)}">
+    <span class="t-top">${hero?'<span class="herolabel">今日いちばん報じられた話</span>':''}<span class="reg">${esc(s.region)}</span>${isFol(s)?'<span class="fol">追いかけ中</span>':''}${isBm(s.id)?'<span>★</span>':''}<span class="t-n">${n}媒体</span></span>
     <span class="t-emo" aria-hidden="true">${esc(s.emoji||'📰')}</span>
     <span class="t-hook">${esc(s.hook||s.title)}</span>${s.hook?`<span class="t-title">${esc(s.title)}</span>`:''}
     <span class="t-state${a!=null?' done':''}">${state}</span></button>`;
 }
 function renderStories(){
   let list = D.stories.filter(s => filter==='すべて' || (filter==='★' ? isBm(s.id) : s.region===filter));
+  const cnt = s => new Set(s.headlines.map(h => h.outlet)).size;
+  let hero = null;
+  if(filter !== '★' && list.length > 2){ hero = list.reduce((a,b) => cnt(b) > cnt(a) ? b : a); list = list.filter(x => x !== hero); }
   list = list.filter(isFol).concat(list.filter(s => !isFol(s)));
-  $('#stories').innerHTML = list.length ? list.map(tileHTML).join('') : `<p class="empty">まだ保存した話題はありません。話題を開いて「☆ 保存」を押すとここに集まります。</p>`;
+  if(hero) list.unshift(hero);
+  $('#stories').innerHTML = list.length ? list.map(x => tileHTML(x, x === hero)).join('') : `<p class="empty">まだ保存した話題はありません。話題を開いて「☆ 保存」を押すとここに集まります。</p>`;
   const qs = D.stories.filter(s => s.quiz), done = qs.filter(s => st.quiz[qkey(s)] != null), ok = done.filter(s => st.quiz[qkey(s)] === s.quiz.answer);
   $('#score').hidden = !qs.length;
-  $('#score').innerHTML = `<b>${ok.length}／${done.length}</b><span>今日の予想の的中（全${qs.length}問）</span><span>追いかけ中の話題 ${st.follows.length}</span><span>あなたの意見 ${st.opinions.length}件</span>`;
+  $('#score').innerHTML = `<b>${ok.length}／${done.length}</b><span>今日の予想の的中（全${qs.length}問）</span><span class="streak">${streakText()}</span><span>追いかけ中の話題 ${st.follows.length}</span><span>あなたの意見 ${st.opinions.length}件</span>`;
   if(openId) renderSheet();
 }
 let openId = null, openTerm = null;
@@ -561,13 +595,33 @@ selbtn.addEventListener('click', () => {
 
 /* ---------- 単語帳 ---------- */
 let wtab = 'words';
+async function allEditions(){
+  const out = [];
+  for(const e of editions){ const ed = await getEdition(e.date); if(ed) out.push(ed); }
+  return out;
+}
+async function buildZukan(){
+  const eds = await allEditions(), m = new Map();
+  const add = (e, name, note, date, title) => { name = String(name||'').trim(); if(!name) return;
+    if(!m.has(name)) m.set(name, {e, name, items:[]}); const z = m.get(name); if(!z.e) z.e = e;
+    if(!z.items.some(x => x.title === title)) z.items.push({note, date, title}); };
+  eds.forEach(ed => (ed.stories||[]).forEach(s => { const f = s.fig; if(!f) return;
+    if(f.kind === 'who') (f.nodes||[]).forEach(n => add(n[0], n[1], n[2], ed.date, s.title));
+    if(f.kind === 'vs') [f.left, f.right].forEach(n => n && add(n[0], n[1], (n[2]||[])[0], ed.date, s.title)); }));
+  if(wtab !== 'zukan' || $('#v-words').hidden) return;
+  const list = [...m.values()].sort((a,b) => b.items.length - a.items.length || a.name.localeCompare(b.name, 'ja'));
+  $('#wbody').innerHTML = list.length ? `<p class="empty" style="text-align:left">ニュースの図に出てきた人・国・組織が、号をまたいで自動でたまります。何度も出てくる名前ほど上に来ます。</p><div class="zukan">${list.map(z => `<div class="zcard"><span class="e">${esc(z.e)}</span><b>${esc(z.name)}</b><span class="n">${z.items.length}回登場</span>
+    <ul>${z.items.slice().sort((a,b)=>b.date.localeCompare(a.date)).map(x => `<li>${esc(x.date.slice(5).replace('-','/'))} ${x.note?esc(x.note)+'（':''}${esc(shortText(x.title, 28))}${x.note?'）':''}</li>`).join('')}</ul></div>`).join('')}</div>`
+    : '<p class="empty">まだ図に出てきた人物はいません。</p>';
+}
 function renderWords(){
-  const tabs = [['words',`単語 ${st.words.length}`],['marks',`マーカー・質問 ${st.marks.length}`],['bm',`保存した話題 ${st.bookmarks.length}`]];
+  const tabs = [['words',`単語 ${st.words.length}`],['zukan','登場人物・国の図鑑'],['marks',`マーカー・質問 ${st.marks.length}`],['bm',`保存した話題 ${st.bookmarks.length}`]];
   $('#wtabs').innerHTML = tabs.map(([k,l]) => `<button class="chip" type="button" data-t="${k}" aria-pressed="${k===wtab}">${l}</button>`).join('');
   let h = '';
   const rev = a => a.map((x,i)=>[x,i]).reverse();
   if(wtab==='words') h = st.words.length ? `<div class="list">${rev(st.words).map(([w,i])=>`<div class="item"><b>${esc(w.term)}</b><span>${esc(w.def)}</span>${w.known?'<span class="known">覚えた</span>':''}<small>${esc(w.date||'')}${w.storyTitle?'・'+esc(w.storyTitle):''}</small><button class="rm" type="button" data-rm="words" data-i="${i}">削除</button></div>`).join('')}</div>` : `<p class="empty">用語の「単語帳に追加」か、上のフォームで単語をためられます。</p>`;
   if(wtab==='marks') h = st.marks.length ? `<div class="list">${rev(st.marks).map(([m,i])=>`<div class="item"><span>${m.qa?esc(m.text):`<mark>${esc(m.text)}</mark>`}</span><small>${esc(m.date||'')}${m.storyTitle?'・'+esc(m.storyTitle):''}</small><button class="rm" type="button" data-rm="marks" data-i="${i}">削除</button></div>`).join('')}</div>` : `<p class="empty">記事の文章を選んで「マーカーで保存」を押すとここにたまります。Claudeへの質問と答えもここに残ります。</p>`;
+  if(wtab==='zukan'){ h = '<p class="empty">読みこみ中…</p>'; buildZukan(); }
   if(wtab==='bm') h = st.bookmarks.length ? `<div class="list">${rev(st.bookmarks).map(([b,i])=>`<div class="item"><a href="#today" data-go="${esc(b.date)}">${esc(b.title)}</a><small>${esc(b.date)}</small><button class="rm" type="button" data-rm="bookmarks" data-i="${i}">削除</button></div>`).join('')}</div>` : `<p class="empty">話題の「☆ 保存」を押すとここにたまります。</p>`;
   $('#wbody').innerHTML = h;
 }
@@ -587,13 +641,25 @@ $('#addword').addEventListener('submit', e => {
 /* ---------- ふりかえり ---------- */
 let qi = 0, reveal = false;
 function weekAgo(){ const d = new Date(); d.setDate(d.getDate()-7); return d.toLocaleDateString('sv-SE',{timeZone:'Asia/Kuala_Lumpur'}); }
+const retry = {};
+async function buildMiss(){
+  const eds = await allEditions(), miss = [];
+  eds.forEach(ed => (ed.stories||[]).forEach(s => { const a = st.quiz[ed.date+'|'+s.id]; if(s.quiz && a != null && a !== s.quiz.answer) miss.push({ed, s, k:ed.date+'|'+s.id}); }));
+  if($('#v-review').hidden) return;
+  $('#rmiss').innerHTML = miss.length ? miss.map(({ed,s,k}) => { const r = retry[k];
+    return `<div class="miss"><small>${esc(ed.date)}・${esc(s.title)}</small><span class="q">${esc(s.quiz.q)}</span>
+      <div class="qopts">${s.quiz.choices.map((c,i) => `<button class="qopt${r!=null && i===s.quiz.answer?' right':''}${r===i && i!==s.quiz.answer?' wrong':''}" type="button" data-rk="${esc(k)}" data-ri="${i}" ${r!=null?'disabled':''}>${'ABC'[i]}　${esc(c)}</button>`).join('')}</div>
+      ${r!=null ? `<span>${r===s.quiz.answer?'◎ 今度は正解！':'△ 正解は '+'ABC'[s.quiz.answer]}　${esc(s.quiz.explain)}</span>` : ''}</div>`; }).join('')
+    : '<p class="empty">はずれた予想はまだありません。「今日のニュース」で予想してみましょう。</p>';
+}
+$('#rmiss').addEventListener('click', e => { const b = e.target.closest('button'); if(!b || !b.dataset.rk) return; retry[b.dataset.rk] = +b.dataset.ri; buildMiss(); });
 function renderReview(){
   const w0 = weekAgo();
   const wkWords = st.words.filter(w => (w.savedAt||w.date||'') >= w0);
   const wkBm = st.bookmarks.filter(b => (b.savedAt||b.date||'') >= w0);
   const wkMarks = st.marks.filter(m => (m.savedAt||m.date||'') >= w0);
   const known = st.words.filter(w=>w.known).length;
-  $('#rstats').innerHTML = [[wkWords.length,'今週ためた単語'],[wkBm.length,'今週保存した話題'],[wkMarks.length,'今週のマーカー・質問'],[`${known}/${st.words.length}`,'覚えた単語']]
+  $('#rstats').innerHTML = [[wkWords.length,'今週ためた単語'],[wkBm.length,'今週保存した話題'],[wkMarks.length,'今週のマーカー・質問'],[`${known}/${st.words.length}`,'覚えた単語'],[Object.keys(st.quiz).length,'これまで予想した数'],[`🔥${streak().n}`,'連続で予想した日数']]
     .map(([n,l])=>`<div class="stat"><b>${n}</b><span>${l}</span></div>`).join('');
   const pool = st.words.filter(w=>!w.known);
   if(!st.words.length){ $('#rcard').innerHTML = `<p class="empty">単語をためると、ここで暗記カードとしてふりかえれます。</p>`; }
@@ -604,6 +670,7 @@ function renderReview(){
       <div class="q">${esc(w.term)}</div>${reveal?`<div class="a">${esc(w.def||'（メモなし）')}</div>${w.storyTitle?`<small>${esc(w.storyTitle)}</small>`:''}`:`<div class="a">意味を思い出してから、めくってみましょう。</div>`}
       <div class="tabs">${reveal?`<button class="chip" type="button" data-q="known">覚えた</button><button class="chip" type="button" data-q="next">まだ</button>`:`<button class="chip" type="button" data-q="flip">めくる</button>`}</div></div>`;
   }
+  buildMiss();
   $('#rop').innerHTML = st.opinions.length ? st.opinions.slice().reverse().map(o=>`<div class="item"><b>${esc(o.choice)}</b><span>${esc(o.q)}</span><small>${esc(o.date)}・${esc(o.title)}</small></div>`).join('') : `<p class="empty">話題の最後にある「あなたはどう思う？」を選ぶと、ここに自分の考えがたまっていきます。</p>`;
   $('#rbm').innerHTML = wkBm.length ? wkBm.map(b=>`<div class="item"><a href="#today" data-go="${esc(b.date)}">${esc(b.title)}</a><small>${esc(b.date)}</small></div>`).join('') : `<p class="empty">今週保存した話題はまだありません。</p>`;
 }
@@ -640,15 +707,21 @@ function cardHTML(s, cls){
   const outlets = new Set(s.headlines.map(h => h.outlet)).size;
   return `<div class="scard ${cls}" data-id="${esc(s.id)}"><span class="stamp yes">あとで読む</span><span class="stamp no">とばす</span>
     <div class="meta"><span class="reg" data-r="${esc(s.region)}">${esc(s.region)}</span><span>${esc(s.cat)}</span><span class="count">${outlets}媒体</span></div>
-    ${s.emoji?`<span class="emo">${esc(s.emoji)}</span>`:''}<h2>${esc(s.hook||s.title)}</h2>${s.hook?`<p class="lead" style="color:var(--muted);font-size:13.5px">${esc(s.title)}</p>`:`<p class="lead">${esc(shortText(s.points[0], 120))}</p>`}
-    ${s.fig ? figHTML(s.fig) : ''}
-    ${t && !s.fig ? `<div class="kt">今日の用語　<b>${esc(t.term)}</b>：${esc(shortText(t.def, 60))}</div>` : ''}</div>`;
+    ${s.emoji?`<span class="emo">${esc(s.emoji)}</span>`:''}<h2>${esc(s.hook||s.title)}</h2>${s.quiz?'':(s.hook?`<p class="lead" style="color:var(--muted);font-size:13.5px">${esc(s.title)}</p>`:`<p class="lead">${esc(shortText(s.points[0], 120))}</p>`)}
+    ${s.quiz ? swipeQuiz(s) : (s.fig ? figHTML(s.fig) : '')}
+    ${t && !s.fig && !s.quiz ? `<div class="kt">今日の用語　<b>${esc(t.term)}</b>：${esc(shortText(t.def, 60))}</div>` : ''}</div>`;
+}
+function swipeQuiz(s){
+  const qz = s.quiz, a = st.quiz[qkey(s)];
+  return `<div class="quiz"><div class="q">🤔 ${esc(qz.q)}</div><div class="qopts">${qz.choices.map((c,i) =>
+    `<button class="qopt${a!=null && i===qz.answer?' right':''}${a===i && i!==qz.answer?' wrong':''}" type="button" data-sq="${i}" ${a!=null?'disabled':''}>${'ABC'[i]}　${esc(c)}</button>`).join('')}</div>
+    ${a!=null ? `<div class="qres"><b>${a===qz.answer?'◎ 正解！':'△ 正解は '+'ABC'[qz.answer]}</b>　${esc(shortText(qz.explain, 70))}</div>` : ''}</div>`;
 }
 function renderSwipe(){
   if(sdate !== D.date){ sdate = D.date; si = 0; kept = 0; }
   renderStabs();
   const list = swipeList(), deck = $('#deck');
-  $('#sprog').textContent = si < list.length ? `${D.date.replace(/-/g,'.')}　${si+1}／${list.length}` : '';
+  $('#sprog').textContent = si < list.length ? `${D.date.replace(/-/g,'.')}　${si+1}／${list.length}　${streakText()}` : '';
   $('#sbtns').hidden = si >= list.length;
   if(si >= list.length){
     deck.innerHTML = `<div class="scard" style="cursor:default;justify-content:center;align-items:center;text-align:center">
@@ -671,7 +744,7 @@ function bindDrag(card){
   if(!card) return;
   let x0 = null, y0 = 0, dx = 0, moved = false;
   const yes = card.querySelector('.stamp.yes'), no = card.querySelector('.stamp.no');
-  card.addEventListener('pointerdown', e => { x0 = e.clientX; y0 = e.clientY; dx = 0; moved = false; card.setPointerCapture(e.pointerId); card.classList.remove('anim'); });
+  card.addEventListener('pointerdown', e => { if(e.target.closest('button')) return; x0 = e.clientX; y0 = e.clientY; dx = 0; moved = false; card.setPointerCapture(e.pointerId); card.classList.remove('anim'); });
   card.addEventListener('pointermove', e => {
     if(x0 === null) return; dx = e.clientX - x0;
     if(Math.abs(dx) > 6) moved = true;
@@ -689,6 +762,7 @@ function bindDrag(card){
 }
 $('#v-swipe').addEventListener('click', e => {
   const b = e.target.closest('button'); if(!b) return;
+  if(b.dataset.sq){ const s = swipeList()[si]; if(s && s.quiz && st.quiz[qkey(s)] == null){ st.quiz[qkey(s)] = +b.dataset.sq; save(); renderSwipe(); } return; }
   if(b.dataset.s === 'keep' || b.dataset.s === 'skip') swipeDone(b.dataset.s);
   if(b.dataset.st){ stab = b.dataset.st; si = 0; kept = 0; renderSwipe(); return; }
   if(b.dataset.s === 'more' && swipeList()[si]) openStory(swipeList()[si].id);
