@@ -293,6 +293,8 @@ body.noscroll{overflow:hidden}
 .tip b{font-family:var(--f-display)}
 .tip button{justify-self:start;font:inherit;font-size:12px;border:1px solid var(--surface);color:var(--surface);background:none;border-radius:6px;padding:2px 8px;cursor:pointer}
 .sheet-in{position:relative}
+.more{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:12.5px}
+.more::before,.more::after{content:"";flex:1;border-top:1px dashed var(--line)}
 </style>
 
 <div class="wrap">
@@ -617,15 +619,16 @@ function renderSheet(){
       <div class="sec"><h3>なにが起きた？</h3><div class="points">${s.points.map(p => `<p>${withTerms(applyMarks(esc(p)), s, used)}</p>`).join('')}</div></div>
       ${s.fig ? `<div class="sec"><h3>登場人物</h3>${figHTML(s.fig)}</div>` : ''}
       ${s.flow ? `<div class="sec"><h3>ここまでの流れ</h3>${figHTML({kind:'flow', steps:s.flow})}</div>` : ''}
-      <div class="sec" id="tl-${esc(s.id)}" hidden><h3>前の号からの続き</h3><div class="tl"></div></div>
-      ${linksHTML(s)}
       <div class="sec"><h3>そもそも、どういう話？</h3><div class="bg"><p style="margin:0">${withTerms(applyMarks(esc(s.background)), s, used)}</p></div></div>
       ${s.why ? `<div class="sec"><h3>わたしに関係ある？</h3><p style="margin:0">${applyMarks(esc(s.why))}</p></div>` : ''}
-      <div class="sec"><h3>どんな立場の媒体が報じた？</h3>${spectrumHTML(s)}<ul class="angles">${s.angles.map(x => `<li>${applyMarks(esc(x))}</li>`).join('')}</ul></div>
-      <div class="sec"><h3>出てきたことば（押すと意味）</h3><div class="chips">${s.terms.map(t => `<button class="tchip" type="button" data-term="${esc(t.term)}" aria-expanded="${t.term===openTerm}">${esc(t.term)}</button>`).join('')}</div>
-        ${term ? `<div class="tdef"><span><b>${esc(term.term)}</b>　${esc(term.def)}</span><div><button class="btn${hasWord(term.term)?' primary':''}" type="button" data-word="${esc(term.term)}" data-def="${esc(term.def)}" data-story="${esc(s.id)}">${hasWord(term.term)?'単語帳に入っています':'単語帳に入れる'}</button></div></div>` : ''}</div>
       ${s.opinion ? `<div class="op"><div class="q">💬 ${esc(s.opinion.q)}</div><div class="qopts">${s.opinion.choices.map((c,i) => `<button class="qopt" type="button" data-op="${i}" aria-pressed="${!!op && op.choice===c}">${esc(c)}</button>`).join('')}</div>
         <small>${op ? '選んだ意見は「ふりかえり」に残ります。考えが変わったら選び直せます。' : '正解はありません。今の自分の考えに一番近いものを選んでください。'}</small></div>` : ''}
+      <div class="more"><span>ここから先は、もっと知りたいとき用</span></div>
+      <div class="sec" id="tl-${esc(s.id)}" hidden><h3>前の号からの続き</h3><div class="tl"></div></div>
+      ${linksHTML(s)}
+      <div class="sec"><h3>どんな立場の媒体が報じた？</h3>${spectrumHTML(s)}<details><summary>それぞれの媒体はどう伝えた？</summary><ul class="angles">${s.angles.map(x => `<li>${applyMarks(esc(x))}</li>`).join('')}</ul></details></div>
+      <div class="sec"><h3>出てきたことば（押すと意味）</h3><div class="chips">${s.terms.map(t => `<button class="tchip" type="button" data-term="${esc(t.term)}" aria-expanded="${t.term===openTerm}">${esc(t.term)}</button>`).join('')}</div>
+        ${term ? `<div class="tdef"><span><b>${esc(term.term)}</b>　${esc(term.def)}</span><div><button class="btn${hasWord(term.term)?' primary':''}" type="button" data-word="${esc(term.term)}" data-def="${esc(term.def)}" data-story="${esc(s.id)}">${hasWord(term.term)?'単語帳に入っています':'単語帳に入れる'}</button></div></div>` : ''}</div>
       <details><summary>各媒体の見出し（${s.headlines.length}件）</summary><ul class="heads">${s.headlines.map(h =>
         `<li><span class="src">${esc(h.outlet)}<i>${esc(h.region)}${h.lean?'・'+esc(h.lean):''}</i></span><a href="${esc(h.link)}" target="_blank" rel="noopener">${esc(h.title)}</a></li>`).join('')}</ul></details>
       ${sample ? `<div class="ask"><h3>Claudeに質問する</h3>
@@ -634,6 +637,7 @@ function renderSheet(){
         <button class="btn" type="button" data-ask="${esc(s.id)}" data-preset="この話題をもっと深く理解するために、知っておくべき歴史的な経緯を3つ教えて">歴史的な経緯は？</button>
         <button class="btn" type="button" data-ask="${esc(s.id)}" data-preset="この話題は日本とマレーシアの暮らしにどう関係する？">私の生活との関係は？</button></div>
         <div class="answer" id="a-${esc(s.id)}" hidden></div></div>` : ''}
+
       ${nextHTML(s)}
       ` : ''}
     </div></article>`;
