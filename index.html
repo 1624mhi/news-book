@@ -690,11 +690,11 @@ function renderStories(){
 }
 let openId = null, openTerm = null, tileOrder = [], justRight = null;
 function openSheet(id){
-  try{ if(speaking && speaking !== id){ speechSynthesis.cancel(); speaking = null; } }catch(e){}
+  try{ if(speaking && speaking !== id && speaking !== 'top3'){ speechSynthesis.cancel(); speaking = null; } }catch(e){}
   openId = id; openTerm = null; renderSheet(); $('#sheet').hidden = false; $('#sheet').scrollTop = 0;
   document.body.classList.add('noscroll'); const x = $('#sheet .x'); if(x) x.focus({preventScroll:true});
 }
-function closeSheet(){ try{ if(speaking){ speechSynthesis.cancel(); speaking = null; } }catch(e){} openId = null; $('#shbar').classList.remove('on'); $('#sheet').hidden = true; document.body.classList.remove('noscroll'); }
+function closeSheet(){ try{ if(speaking && speaking !== 'top3'){ speechSynthesis.cancel(); speaking = null; } }catch(e){} openId = null; $('#shbar').classList.remove('on'); $('#sheet').hidden = true; document.body.classList.remove('noscroll'); }
 $('#sheet').addEventListener('click', e => { if(e.target.id === 'sheet') closeSheet(); });
 $('#sheet').addEventListener('scroll', () => { $('#shbar').classList.toggle('on', $('#sheet').scrollTop > 320); }, {passive:true});
 $('#shbar').addEventListener('click', e => { if(e.target.closest('[data-close]')) closeSheet(); else $('#sheet').scrollTo({top:0, behavior:'smooth'}); });
