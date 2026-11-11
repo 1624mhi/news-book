@@ -498,9 +498,11 @@ function checkBadges(){
   const now = earnedBadges(), fresh = now.filter(id => !st.badges.includes(id));
   if(!fresh.length) return false;
   st.badges = st.badges.concat(fresh);
-  if(badgeReady) fresh.forEach((id, i) => { const b = BADGES.find(x => x[0] === id); setTimeout(() => badgeToast(b), 700 + i*1800); });
+  if(badgeReady){ fresh.forEach(id => { const b = BADGES.find(x => x[0] === id); if(b && !badgeQ.includes(b)) badgeQ.push(b); }); badgeRun(); }
   return true;
 }
+let badgeQ = [], badgeBusy = false;
+function badgeRun(){ if(badgeBusy || !badgeQ.length) return; badgeBusy = true; setTimeout(() => { badgeToast(badgeQ.shift()); setTimeout(() => { badgeBusy = false; badgeRun(); }, 2800); }, 500); }
 function badgeToast(b){ const d = document.createElement('div'); d.className = 'badgetoast'; d.innerHTML = `<span class="be">${b[1]}</span><span><small>バッジを手に入れました</small><b>${esc(b[2])}</b></span>`; document.body.appendChild(d); setTimeout(() => d.remove(), 2600); }
 function badgesHTML(){
   const have = st.badges || [];
