@@ -138,6 +138,8 @@ nav.filters{position:static}
 .tell{border:1.5px dashed color-mix(in srgb,var(--rc) 45%,transparent);border-radius:14px;padding:12px 14px;display:grid;gap:8px;margin-top:6px}
 .tell h3{margin:0;font-size:14px}.tell .tq{margin:0;font-size:14px;line-height:1.7;background:color-mix(in srgb,var(--rc) 7%,var(--surface));border-radius:10px;padding:10px 12px}
 .tell .tb{display:flex;flex-wrap:wrap;gap:10px;align-items:center}.tell small{color:var(--muted);font-size:12px}
+.prog{grid-column:1/-1;display:flex;align-items:center;gap:10px;font-size:12.5px;color:var(--muted);width:100%}.pbar{flex:1;height:8px;border-radius:99px;background:var(--line);overflow:hidden}.pbar i{display:block;height:100%;background:var(--accent);border-radius:99px;transition:width .4s}
+.laterbtn{grid-column:1/-1;width:100%;text-align:left;font:inherit;font-size:13.5px;font-weight:700;color:var(--ink);background:color-mix(in srgb,var(--marker) 30%,var(--surface));border:0;border-radius:10px;padding:8px 12px;cursor:pointer}
 .scard.anim{transition:transform .28s ease,opacity .28s ease}
 .scard h2{font-size:21px}
 .scard .lead{font-size:15px;line-height:1.75;margin:0}
@@ -501,6 +503,7 @@ function renderFilters(){
   $('#filters').innerHTML = regions.map(r => `<button class="chip" type="button" data-r="${r}" aria-pressed="${r===filter}">${r}</button>`).join('') +
     `<button class="chip" type="button" data-r="★" aria-pressed="${filter==='★'}">★ 保存した話題</button>`;
 }
+$('#score').addEventListener('click', e => { const b = e.target.closest('.laterbtn'); if(!b) return; filter = '★'; renderFilters(); renderStories(); });
 $('#filters').addEventListener('click', e => { const b = e.target.closest('button'); if(!b) return; filter = b.dataset.r; renderFilters(); renderStories(); });
 let sample = null;
 
@@ -585,7 +588,8 @@ function renderStories(){
   $('#stories').innerHTML = list.length ? list.map(x => tileHTML(x, x === hero)).join('') : `<p class="empty">まだ保存した話題はありません。話題を開いて「☆ 保存」を押すとここに集まります。</p>`;
   const qs = D.stories.filter(s => s.quiz), done = qs.filter(s => st.quiz[qkey(s)] != null), ok = done.filter(s => st.quiz[qkey(s)] === s.quiz.answer);
   $('#score').hidden = !qs.length;
-  $('#score').innerHTML = `<b>${ok.length}／${done.length}</b><span>今日の予想の的中（全${qs.length}問）</span><span class="streak">${streakText()}</span><span>追いかけ中の話題 ${st.follows.length}</span><span>あなたの意見 ${st.opinions.length}件</span>${qs.length && done.length === qs.length ? `<span class="alldone">🎉 今日の予想を全部終えました！ 次の号は明日の朝8時に届きます。</span>` : ''}`;
+  const later = D.stories.filter(s => isBm(s.id) && (!s.quiz || st.quiz[qkey(s)] == null)).length;
+  $('#score').innerHTML = `<div class="prog" aria-label="今日の進み具合"><div class="pbar"><i style="width:${qs.length ? Math.round(done.length/qs.length*100) : 0}%"></i></div><span>${done.length}／${qs.length}話 予想ずみ</span></div>${later && filter !== '★' ? `<button type="button" class="laterbtn" data-r="★">🔖 あとで読むにした話が ${later} 件あります →</button>` : ''}<b>${ok.length}／${done.length}</b><span>今日の予想の的中（全${qs.length}問）</span><span class="streak">${streakText()}</span><span>追いかけ中の話題 ${st.follows.length}</span><span>あなたの意見 ${st.opinions.length}件</span>${qs.length && done.length === qs.length ? `<span class="alldone">🎉 今日の予想を全部終えました！ 次の号は明日の朝8時に届きます。</span>` : ''}`;
   if(openId) renderSheet();
 }
 let openId = null, openTerm = null, tileOrder = [], justRight = null;
