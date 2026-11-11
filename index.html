@@ -1,4 +1,4 @@
-<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="description" content="日本・世界・マレーシアの約90媒体から毎朝話題をまとめる学びのニュース帳"><style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style><script>window.NEWSBOOK_SITE=true</script></head><body><title>世界を学ぶニュース帳</title>
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>ニュース帳</title><link rel="apple-touch-icon" href="icon-180.png"><link rel="icon" href="icon-180.png"><link rel="manifest" href="manifest.json"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="ニュース帳"><meta name="theme-color" content="#1f6f5c"><meta name="description" content="日本・世界・マレーシアの約90媒体から毎朝話題をまとめる学びのニュース帳"><style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style><script>window.NEWSBOOK_SITE=true</script></head><body><title>世界を学ぶニュース帳</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&family=Zen+Kaku+Gothic+Antique:wght@500;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
@@ -1355,6 +1355,7 @@ if(window.NEWSBOOK_SITE){
     sec.className = 'view';
     sec.innerHTML = `<h2>そもそも講座</h2>
       <p class="kiso-lede">ニュースが「ふーん」で終わらないための、世界の“前提知識”。1つ3分、図で読めます。</p>
+      <button type="button" class="kchip" data-kquiz="1" style="justify-self:start;font-size:14px;padding:8px 16px">🧠 講座クイズで腕だめし（${P.length}問）</button>
       <div class="kiso-prog"><b>${P.length}講座のうち ${done} 講座を読みました${done === P.length ? ' 🎉' : ''}</b><div class="kiso-bar"><i style="width:${done / P.length * 100}%"></i></div></div>
       ${todayP.length ? `<div class="kiso-grp"><h3>📌 今日のニュースを読むなら <small>まずはこの5つから</small></h3><div class="kchips">${todayP.map(p => `<button type="button" class="kchip k-${e(p.group)}" data-kiso="${e(p.id)}">${e(p.emoji)} ${e(p.title)}${ks.read[p.id] ? ' ✓' : ''}</button>`).join('')}</div></div>` : ''}
       ${(K.courses || []).length ? `<div class="kiso-grp"><h3>🧭 おすすめコース <small>上から順に読むと、つながりがわかります</small></h3><div class="kcourses">${K.courses.map(c => { const d = c.ids.filter(id => ks.read[id]).length; return `<div class="kcourse"><div><b>${e(c.emoji)} ${e(c.title)}</b><small>${d}／${c.ids.length}${d === c.ids.length ? ' 🎉' : ''}</small></div><small>${e(c.sub)}</small><div class="kchips">${c.ids.map((id, j) => byId[id]).filter(Boolean).map((p, j) => `<button type="button" class="kchip k-${e(p.group)}${ks.read[p.id] ? ' done' : ''}" data-kiso="${e(p.id)}">${j + 1}. ${e(p.title)}${ks.read[p.id] ? ' ✓' : ''}</button>`).join('')}</div></div>`; }).join('')}</div></div>` : ''}
@@ -1395,12 +1396,34 @@ if(window.NEWSBOOK_SITE){
       <div class="kfoot"><button type="button" class="kread ${ks.read[p.id] ? 'on' : ''}" data-kr="1">${ks.read[p.id] ? '✓ 読みました' : '読んだ！'}</button>${nx ? `<button type="button" class="kchip k-${e(nx.group)}" data-kiso="${e(nx.id)}">次の講座：${e(nx.emoji)} ${e(nx.title)} →</button>` : ''}</div>
     </div>`;
   }
-  window.renderKiso = function(){ const p = cur && byId[cur]; if(p) detail(p); else list(); };
+  let qz = null; // {id, pick}
+  function nextQuiz(){
+    const wrong = P.filter(p => ks.quiz[p.id] != null && ks.quiz[p.id] !== p.quiz.a), fresh = P.filter(p => ks.quiz[p.id] == null);
+    const pool = wrong.length && Math.random() < .5 ? wrong : (fresh.length ? fresh : P);
+    let p = pool[Math.floor(Math.random() * pool.length)];
+    if(qz && pool.length > 1 && p.id === qz.id) p = pool[(pool.indexOf(p) + 1) % pool.length];
+    qz = {id: p.id, pick: null};
+  }
+  function quizView(){
+    if(!qz) nextQuiz();
+    const p = byId[qz.id], q = p.quiz, a = qz.pick;
+    const ok = P.filter(x => ks.quiz[x.id] === x.quiz.a).length;
+    sec.className = 'view k-' + p.group;
+    sec.innerHTML = `<div class="kd"><button type="button" class="kback" data-kiso="">← 講座の一覧</button>
+      <div class="kiso-prog"><b>🧠 講座クイズ　正解 ${ok}／${P.length}問</b><div class="kiso-bar"><i style="width:${ok / P.length * 100}%"></i></div></div>
+      <div class="kblk"><h4>${e(p.emoji)} ${e(p.title)}より</h4><div class="kquiz"><p>${e(q.q)}</p><div class="kc">${q.c.map((c, j) => `<button type="button" data-kqq="${j}" class="${a != null ? (j === q.a ? 'ok' : (j === a ? 'ng' : '')) : ''}">${e(c)}</button>`).join('')}</div>${a != null ? `<p class="kans">${a === q.a ? '⭕ 正解！' : '❌ おしい！ 正解は「' + e(q.c[q.a]) + '」'}　${e(q.why)}</p>` : ''}</div></div>
+      ${a != null ? `<div class="kfoot"><button type="button" class="kchip k-${e(p.group)}" data-kiso="${e(p.id)}">${e(p.emoji)} この講座を読む</button><button type="button" class="kread" data-kqn="1">次の問題 →</button></div>` : ''}
+    </div>`;
+  }
+  window.renderKiso = function(){ if(cur === '__quiz') return quizView(); const p = cur && byId[cur]; if(p) detail(p); else list(); };
   function open(id){ cur = id || null; window.renderKiso(); scrollTo(0, 0); }
 
   sec.addEventListener('click', ev => {
     const t = ev.target.closest('button,a'); if(!t) return;
     if(t.dataset.kiso != null){ open(t.dataset.kiso); return; }
+    if(t.dataset.kquiz){ qz = null; open('__quiz'); return; }
+    if(t.dataset.kqq != null && qz && qz.pick == null){ qz.pick = +t.dataset.kqq; ks.quiz[qz.id] = qz.pick; keep(); quizView(); return; }
+    if(t.dataset.kqn){ nextQuiz(); quizView(); scrollTo(0, 0); return; }
     const p = byId[cur]; if(!p) return;
     if(t.dataset.kq != null){ ks.quiz[p.id] = +t.dataset.kq; ks.read[p.id] = ks.read[p.id] || new Date().toISOString().slice(0, 10); keep(); detail(p); return; }
     if(t.dataset.kr){ if(ks.read[p.id]) delete ks.read[p.id]; else ks.read[p.id] = new Date().toISOString().slice(0, 10); keep(); detail(p); return; }
