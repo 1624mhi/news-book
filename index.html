@@ -633,7 +633,7 @@ function renderStories(){
   if(placeF) list = list.filter(s => s.place && (pgroups[placeF]||[]).includes(s.place[0]));
   const cnt = s => new Set(s.headlines.map(h => h.outlet)).size;
   let hero = null;
-  if(filter !== '★' && !placeF && list.length > 2){ hero = list.reduce((a,b) => cnt(b) > cnt(a) ? b : a); list = list.filter(x => x !== hero); }
+  if(filter !== '★' && filter !== 'すべて' && !placeF && list.length > 2){ hero = list.reduce((a,b) => cnt(b) > cnt(a) ? b : a); list = list.filter(x => x !== hero); }
   list = list.filter(isFol).concat(list.filter(s => !isFol(s)));
   if(hero) list.unshift(hero);
   tileOrder = list.map(x => x.id);
