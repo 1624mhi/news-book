@@ -312,6 +312,7 @@ body.noscroll{overflow:hidden}
 .say3{font:inherit;font-size:12px;font-weight:700;margin-left:6px;border:1.5px solid var(--accent);color:var(--accent);background:var(--surface);border-radius:99px;padding:2px 10px;cursor:pointer;vertical-align:middle}
 .wkmap{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px}#wpl{display:grid;gap:4px;margin-top:8px;font-size:13px}#wpl small{color:var(--muted)}
 .cont{display:grid;gap:6px;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:12px 14px;margin-bottom:12px}.cont h3{margin:0 0 2px;font-size:15px}.cont button{display:flex;gap:10px;align-items:flex-start;text-align:left;font:inherit;color:var(--ink);background:none;border:0;border-top:1px dashed var(--line);padding:8px 0 4px;cursor:pointer}.cont h3+button{border-top:0}.cont details{display:grid;gap:6px}.cont summary{cursor:pointer;color:var(--accent);font-size:13px;font-weight:700;padding:6px 0}.cont .e{font-size:20px}.cont b{display:block;font-size:14px;line-height:1.5}.cont small{display:block;color:var(--muted);font-size:12px;line-height:1.5}
+#keyhelp{position:fixed;inset:0;z-index:95;background:rgba(0,0,0,.35);display:grid;place-items:center}#keyhelp>div{background:var(--surface);color:var(--ink);border-radius:16px;padding:18px 22px;min-width:260px;box-shadow:0 20px 60px rgba(0,0,0,.3)}#keyhelp dl{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;margin:12px 0}#keyhelp dt{font-family:ui-monospace,monospace;font-weight:700;background:var(--accent-soft);border-radius:6px;padding:0 8px;text-align:center}#keyhelp dd{margin:0}#keyhelp small{color:var(--muted)}
 .srsd{letter-spacing:2px;color:var(--accent)}
 .alldone .pill{--rc:var(--accent);border-radius:12px;text-align:left}.alldone .kisonext{align-self:flex-start;margin:0}.alldone{flex-basis:100%;display:flex;flex-direction:column;gap:6px;padding:12px;border-radius:12px;background:color-mix(in srgb,var(--my) 10%,transparent)}.alldone>b{color:var(--my)}.alldone .dn{display:flex;flex-wrap:wrap;gap:6px;align-items:center}.alldone small{color:var(--muted)}
 .links{display:grid;gap:8px}
@@ -386,7 +387,7 @@ html.fs2 .sh-body,html.fs2 #v-kiso,html.fs2 #wbody,html.fs2 .sh-hero h2{zoom:1.2
       <button type="button" data-s="more">くわしく</button>
       <button type="button" data-s="keep" class="keep">あとで読む →</button>
     </div>
-    <p class="shint">右にスワイプで「あとで読む」に保存、左でとばす。キーボードの ← → でも操作できます。</p>
+    <p class="shint">右にスワイプで「あとで読む」、左でとばす。パソコンでは ← → キーでも操作でき、? キーで操作の一覧が出ます。</p>
   </section>
 
   <section id="v-today" hidden>
@@ -1823,6 +1824,13 @@ ruby rt{font-size:.55em;color:var(--muted);font-weight:400}
 })();
 </script>
 
+<script>addEventListener('keydown', e => {
+  if(e.key !== '?' || (e.target.closest && e.target.closest('input,textarea'))) return;
+  let d = document.getElementById('keyhelp'); if(d){ d.remove(); return; }
+  d = document.createElement('div'); d.id = 'keyhelp'; d.setAttribute('role','dialog'); d.setAttribute('aria-label','キー操作');
+  d.innerHTML = '<div><b>⌨️ キー操作</b><dl><dt>→</dt><dd>あとで読む（サクッと・記事）</dd><dt>←</dt><dd>とばす（サクッと・記事）</dd><dt>Esc</dt><dd>記事を閉じる</dd><dt>?</dt><dd>この表を出す・消す</dd></dl><small>どこかを押すと閉じます</small></div>';
+  d.addEventListener('click', () => d.remove()); document.body.appendChild(d);
+});</script>
 <script>(function(){ const show = () => { let d = document.getElementById('offl'); if(navigator.onLine){ if(d) d.remove(); return; }
   if(!d){ d = document.createElement('div'); d.id = 'offl'; d.textContent = '📴 オフライン中：保存済みの号を表示しています'; document.body.appendChild(d); } };
   addEventListener('online', show); addEventListener('offline', show); show(); })();</script>
