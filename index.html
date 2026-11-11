@@ -791,6 +791,7 @@ function renderSheet(){
       ${swNav(s)}
       <span class="emo" aria-hidden="true">${esc(s.emoji||'📰')}</span>
       <h2>${esc(s.hook||s.title)}</h2>${s.hook?`<p class="sub">${esc(s.title)}</p>`:''}
+      ${(() => { const kp = window.kisoRelated ? (window.kisoRelated(s, 1) || [])[0] : null; return kp ? `<a class="skiso ktop" href="#kiso-${esc(kp.id)}">📘 前提を3分で：${esc(kp.emoji)} ${esc(kp.title)}</a>` : ''; })()}
       ${miniMap(s)}
       <div class="sh-acts">${s.thread?`<button class="pill" type="button" data-follow="${esc(s.thread)}" aria-pressed="${isFol(s)}">${isFol(s)?'✓ 追いかけ中':'＋ この話を追いかける'}</button>`:''}
         <button class="pill" type="button" data-bm="${esc(s.id)}" aria-pressed="${isBm(s.id)}">${isBm(s.id)?'★ 保存済み':'☆ 保存'}</button>
