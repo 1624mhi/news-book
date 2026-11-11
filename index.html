@@ -321,6 +321,7 @@ body.noscroll{overflow:hidden}
 .memo{display:grid;gap:8px;margin:18px 0}.memo h3{margin:0}.memo textarea{font:inherit;font-size:14.5px;width:100%;box-sizing:border-box;border:1.5px solid var(--line);border-radius:12px;padding:10px;background:var(--surface);color:var(--ink);resize:vertical}.memo textarea:focus{border-color:var(--accent);outline:none}.memo .pill{justify-self:start;--rc:var(--accent)}
 .mhd{font-size:13px;color:var(--muted);margin:4px 0 8px}.mhd b{color:var(--accent);font-size:16px}
 .wsort{margin:8px 0 4px}
+.swho{display:flex;flex-wrap:wrap;gap:4px 6px;align-items:center;font-size:12px;color:var(--muted)}.swho b{color:var(--ink);margin-right:2px}.swho span{background:var(--accent-soft);color:var(--ink);border-radius:99px;padding:2px 8px}
 .racc{display:grid;gap:6px;margin-bottom:6px}.rrow{display:grid;grid-template-columns:5.5em 1fr 6.5em;align-items:center;gap:8px;font-size:.9rem}.rrow i{height:10px;border-radius:5px;background:var(--line);overflow:hidden}.rrow b{display:block;height:100%;background:var(--accent);border-radius:5px}.rrow[data-r="日本"] b{background:var(--jp)}.rrow[data-r="マレーシア"] b{background:var(--my)}.rrow[data-r="世界"] b{background:var(--world)}.rrow em{font-style:normal;font-weight:700;text-align:right}.rrow em small{font-weight:400;color:var(--muted)}
 .cal{display:grid;gap:6px;max-width:360px}.calh,.calg{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}.calh span{font-size:11px;color:var(--muted);text-align:center}.calg i{aspect-ratio:1;border-radius:6px;display:grid;place-items:center;font-size:11px;font-style:normal;color:var(--muted)}.calg i.l0{background:var(--line)}.calg i.l1{background:color-mix(in srgb,var(--accent) 30%,transparent);color:var(--ink)}.calg i.l2{background:color-mix(in srgb,var(--accent) 60%,transparent);color:#fff}.calg i.l3{background:var(--accent);color:#fff}.calg i.td{outline:2px solid var(--ink);outline-offset:1px}.cal small{color:var(--muted)}
 #wfind{font:inherit;font-size:15px;width:100%;box-sizing:border-box;border:1.5px solid var(--line);border-radius:12px;padding:9px 12px;margin-bottom:10px;background:var(--surface);color:var(--ink)}
@@ -1346,7 +1347,10 @@ function sfootHTML(s){
   const why = a != null && s.why ? `<div class="swhy"><b>わたしに関係ある？</b>${esc(shortText(s.why, 64))}</div>` : '';
   const kp = a != null && window.kisoRelated ? (window.kisoRelated(s, 1) || [])[0] : null;
   const kc = kp ? `<a class="skiso" href="#kiso-${esc(kp.id)}">📘 そもそも：${esc(kp.emoji)} ${esc(kp.title)} →</a>` : '';
-  return `<div class="sfoot">${why}${kc}<div class="sfl">${s.place ? `<span>📍 ${esc(s.place[0])}</span>` : '<span></span>'}<span class="tapmore">タップで詳しく →</span></div></div>`;
+  const oc = {}, seen = new Set(); (s.headlines||[]).forEach(h => { if(seen.has(h.outlet)) return; seen.add(h.outlet); oc[h.region] = (oc[h.region]||0) + 1; });
+  const ocs = Object.entries(oc).sort((x, y) => y[1] - x[1]), wide = ocs.length;
+  const who = wide ? `<div class="swho">🗞 <b>${wide >= 4 ? `${wide}つの国・地域で報道` : '報じた国・地域'}</b>${ocs.slice(0, 4).map(([r, n]) => `<span>${esc(r)} ${n}</span>`).join('')}${wide > 4 ? `<span>ほか${wide - 4}</span>` : ''}</div>` : '';
+  return `<div class="sfoot">${who}${why}${kc}<div class="sfl">${s.place ? `<span>📍 ${esc(s.place[0])}</span>` : '<span></span>'}<span class="tapmore">タップで詳しく →</span></div></div>`;
 }
 function swipeQuiz(s){
   const qz = s.quiz, a = st.quiz[qkey(s)];
