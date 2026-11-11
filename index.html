@@ -127,6 +127,7 @@ nav.filters{position:static}
 .deck{position:relative;width:100%;max-width:460px;height:min(72vh,640px);min-height:440px}
 .scard{position:absolute;inset:0;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:22px 22px 18px;display:flex;flex-direction:column;gap:12px;box-shadow:0 6px 24px rgba(0,0,0,.08);touch-action:pan-y;user-select:none;-webkit-user-select:none;overflow:hidden;cursor:grab}
 .scard.back{transform:scale(.95) translateY(12px);opacity:.7;pointer-events:none}
+.sfoot{margin-top:auto;display:grid;gap:8px}.swhy{font-size:13px;line-height:1.6;background:color-mix(in srgb,var(--rc,var(--world)) 10%,var(--surface));border-radius:10px;padding:8px 12px}.swhy b{display:block;font-size:11.5px;color:var(--muted);margin-bottom:2px}.sfl{display:flex;justify-content:space-between;font-size:12px;color:var(--muted)}.tapmore{font-weight:700}
 .scard.anim{transition:transform .28s ease,opacity .28s ease}
 .scard h2{font-size:21px}
 .scard .lead{font-size:15px;line-height:1.75;margin:0}
@@ -326,6 +327,7 @@ body.noscroll{overflow:hidden}
     <a href="#words" data-v="words">単語帳</a>
     <a href="#review" data-v="review">ふりかえり</a>
     <a href="#archive" data-v="archive">過去の号</a>
+    <a href="#kiso" data-v="kiso" id="nav-kiso" hidden>そもそも講座</a>
   </nav>
 
   <section id="v-swipe" class="swipe" hidden>
@@ -437,7 +439,7 @@ function renderEditionSelect(){
 $('#edsel').addEventListener('change', e => openEdition(e.target.value));
 
 /* ---------- 今日のニュース ---------- */
-const regions = ['すべて','日本','世界','マレーシア'];
+const regions = ['すべて','日本','マレーシア','世界','経済'];
 let filter = 'すべて';
 const isBm = id => st.bookmarks.some(b => b.id === id && b.date === D.date);
 const hasWord = t => st.words.some(w => w.term === t);
@@ -521,7 +523,7 @@ function tileHTML(s, hero){
     <span class="t-state${a!=null?' done':''}">${state}</span></button>`;
 }
 function renderStories(){
-  let list = D.stories.filter(s => filter==='すべて' || (filter==='★' ? isBm(s.id) : s.region===filter));
+  let list = D.stories.filter(s => filter==='すべて' || (filter==='★' ? isBm(s.id) : filter==='経済' ? /経済|ビジネス|市場|金融/.test(s.cat) : s.region===filter));
   renderMap();
   if(placeF) list = list.filter(s => s.place && (pgroups[placeF]||[]).includes(s.place[0]));
   const cnt = s => new Set(s.headlines.map(h => h.outlet)).size;
@@ -688,6 +690,7 @@ function renderSheet(){
         <small>${op ? '選んだ意見は「ふりかえり」に残ります。考えが変わったら選び直せます。' : '正解はありません。今の自分の考えに一番近いものを選んでください。'}</small></div>` : ''}
       <div class="more"><span>ここから先は、もっと知りたいとき用</span></div>
       <div class="sec" id="tl-${esc(s.id)}" hidden><h3>前の号からの続き</h3><div class="tl"></div></div>
+      ${window.kisoLinks ? window.kisoLinks(s) : ''}
       ${linksHTML(s)}
       <div class="sec"><h3>どんな立場の媒体が報じた？</h3>${spectrumHTML(s)}<details><summary>それぞれの媒体はどう伝えた？</summary><ul class="angles">${s.angles.map(x => `<li>${applyMarks(esc(x))}</li>`).join('')}</ul></details></div>
       <div class="sec"><h3>出てきたことば（押すと意味）</h3><div class="chips">${s.terms.map(t => `<button class="tchip" type="button" data-term="${esc(t.term)}" aria-expanded="${t.term===openTerm}">${esc(t.term)}</button>`).join('')}</div>
@@ -913,7 +916,13 @@ function cardHTML(s, cls){
     <div class="meta"><span class="reg" data-r="${esc(s.region)}">${esc(s.region)}</span><span>${esc(s.cat)}</span><span class="count">${outlets}媒体</span></div>
     ${s.emoji?`<span class="emo">${esc(s.emoji)}</span>`:''}<h2>${esc(s.hook||s.title)}</h2>${s.quiz?'':(s.hook?`<p class="lead" style="color:var(--muted);font-size:13.5px">${esc(s.title)}</p>`:`<p class="lead">${esc(shortText(s.points[0], 120))}</p>`)}
     ${s.quiz ? swipeQuiz(s) : (s.fig ? figHTML(s.fig) : '')}
-    ${t && !s.fig && !s.quiz ? `<div class="kt">今日の用語　<b>${esc(t.term)}</b>：${esc(shortText(t.def, 60))}</div>` : ''}</div>`;
+    ${t && !s.fig && !s.quiz ? `<div class="kt">今日の用語　<b>${esc(t.term)}</b>：${esc(shortText(t.def, 60))}</div>` : ''}
+    ${sfootHTML(s)}</div>`;
+}
+function sfootHTML(s){
+  const a = s.quiz ? st.quiz[qkey(s)] : 0;
+  const why = a != null && s.why ? `<div class="swhy"><b>わたしに関係ある？</b>${esc(shortText(s.why, 64))}</div>` : '';
+  return `<div class="sfoot">${why}<div class="sfl">${s.place ? `<span>📍 ${esc(s.place[0])}</span>` : '<span></span>'}<span class="tapmore">タップで詳しく →</span></div></div>`;
 }
 function swipeQuiz(s){
   const qz = s.quiz, a = st.quiz[qkey(s)];
@@ -984,14 +993,15 @@ addEventListener('keydown', e => {
 });
 
 /* ---------- 画面切り替え ---------- */
-const VIEWS = ['swipe','today','words','review','archive'];
+const VIEWS = ['swipe','today','words','review','archive','kiso'];
 function route(){
   const v = VIEWS.includes(location.hash.slice(1)) ? location.hash.slice(1) : 'swipe';
-  VIEWS.forEach(x => { $('#v-'+x).hidden = x !== v; });
+  VIEWS.forEach(x => { const el = $('#v-'+x); if(el) el.hidden = x !== v; });
   document.querySelectorAll('.appnav a').forEach(a => a.setAttribute('aria-current', a.dataset.v===v ? 'page' : 'false'));
   if(v==='words') renderWords(); if(v==='review') renderReview(); if(v==='archive') renderArchive();
   if(v==='today'){ renderFilters(); renderStories(); }
   if(v==='swipe') renderSwipe();
+  if(v==='kiso' && window.renderKiso) window.renderKiso();
   if(v!=='today' && openId) closeSheet();
 }
 addEventListener('hashchange', () => { route(); scrollTo(0,0); });
@@ -1044,4 +1054,5 @@ if(window.NEWSBOOK_SITE){
   }, () => { clearTimeout(timer); setSync('同期できません。この端末には保存しています'); });
 })();
 </script>
+
 </body></html>
