@@ -889,7 +889,7 @@ function renderTops(){
 }
 function renderEdition(){
   const t = new Date(D.fetched_at);
-  $('#date').textContent = D.date.replace(/-/g,'.') + '　取得 ' + t.toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit',timeZone:'Asia/Kuala_Lumpur'}) + '（マレーシア時間）';
+  $('#date').textContent = D.date.replace(/-/g,'.') + ' ・ ' + t.toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit',timeZone:'Asia/Kuala_Lumpur'}) + ' 更新（マレーシア）';
   $('#nOutlets').textContent = D.status.filter(s => s.ok && s.fresh > 0).length;
   renderEditionSelect(); renderFilters(); renderStories(); renderTops();
   if(!$('#v-swipe').hidden) renderSwipe();
