@@ -429,7 +429,7 @@ html.fs2 .sh-body,html.fs2 #v-kiso,html.fs2 #wbody,html.fs2 .sh-hero h2{zoom:1.2
     <div><h3>バッジ</h3><div id="rbadges"></div></div>
     <div><h3>はずれた予想に再挑戦</h3><div class="list" id="rmiss"></div></div>
     <div><h3>あなたが選んだ意見</h3><div class="list" id="rop"></div></div>
-    <div><h3>今週保存した話題</h3><div class="list" id="rbm"></div></div>
+    <div><h3>今週あとで読むにした話</h3><div class="list" id="rbm"></div></div>
     <details class="xfer" id="gsync"><summary>🔄 スマホとパソコンを自動で同期（GitHub）</summary>
       <p id="gstat">まだつながっていません。</p>
       <div id="gform"><input type="password" id="gtok" placeholder="GitHubのトークン（ghp_… または github_pat_…）" autocomplete="off">
@@ -584,7 +584,7 @@ function applyMarks(html){
 }
 function renderFilters(){
   $('#filters').innerHTML = regions.map(r => `<button class="chip" type="button" data-r="${r}" aria-pressed="${r===filter}">${r}</button>`).join('') +
-    `<button class="chip" type="button" data-r="★" aria-pressed="${filter==='★'}">★ 保存した話題</button>`;
+    `<button class="chip" type="button" data-r="★" aria-pressed="${filter==='★'}">🔖 あとで読む</button>`;
 }
 let pqT = 0;
 async function searchPast(q){
@@ -681,7 +681,7 @@ function renderStories(){
   list = list.filter(isFol).concat(list.filter(s => !isFol(s)));
   if(hero) list.unshift(hero);
   tileOrder = list.map(x => x.id);
-  $('#stories').innerHTML = list.length ? list.map(x => tileHTML(x, x === hero)).join('') : (qword ? `<p class="empty">「${esc(qword)}」が出てくる話は今日の号にはありません。</p>` : `<p class="empty">まだ保存した話題はありません。話題を開いて「☆ 保存」を押すとここに集まります。</p>`);
+  $('#stories').innerHTML = list.length ? list.map(x => tileHTML(x, x === hero)).join('') : (qword ? `<p class="empty">「${esc(qword)}」が出てくる話は今日の号にはありません。</p>` : `<p class="empty">まだ「あとで読む」にした話はありません。話題を開いて「🔖 あとで読む」を押すとここに集まります。</p>`);
   const qs = D.stories.filter(s => s.quiz), done = qs.filter(s => st.quiz[qkey(s)] != null), ok = done.filter(s => st.quiz[qkey(s)] === s.quiz.answer);
   { const c = s => new Set(s.headlines.map(h => h.outlet)).size, top = D.stories.slice().sort((a,b) => c(b) - c(a)).slice(0, 3);
     $('#top3').hidden = !!(qword || filter !== 'すべて');
@@ -865,7 +865,7 @@ function renderSheet(){
       ${(() => { const kp = window.kisoRelated ? (window.kisoRelated(s, 1) || [])[0] : null; return kp ? `<a class="skiso ktop" href="#kiso-${esc(kp.id)}">📘 前提を3分で：${esc(kp.emoji)} ${esc(kp.title)}</a>` : ''; })()}
       ${miniMap(s)}
       <div class="sh-acts">${s.thread?`<button class="pill" type="button" data-follow="${esc(s.thread)}" aria-pressed="${isFol(s)}">${isFol(s)?'✓ 追いかけ中':'＋ この話を追いかける'}</button>`:''}
-        <button class="pill" type="button" data-bm="${esc(s.id)}" aria-pressed="${isBm(s.id)}">${isBm(s.id)?'★ 保存済み':'☆ 保存'}</button>
+        <button class="pill" type="button" data-bm="${esc(s.id)}" aria-pressed="${isBm(s.id)}">${isBm(s.id)?'🔖 あとで読むに入れました':'🔖 あとで読む'}</button>
         ${'speechSynthesis' in window ? `<button class="pill" type="button" data-speak="${esc(s.id)}" aria-pressed="${speaking===s.id}">${speaking===s.id?'■ 止める':'🔊 読み上げ'}</button>` : ''}</div></div>
     <div class="sh-body">
       ${quiz}
@@ -1049,7 +1049,7 @@ function sugHTML(){
 }
 var wedit = -1;
 function renderWords(){
-  const tabs = [['words',`単語 ${st.words.length}`],['zukan','登場人物・国の図鑑'],['marks',`マーカー・質問 ${st.marks.length}`],['bm',`保存した話題 ${st.bookmarks.length}`]];
+  const tabs = [['words',`単語 ${st.words.length}`],['zukan','登場人物・国の図鑑'],['marks',`マーカー・質問 ${st.marks.length}`],['bm',`あとで読む ${st.bookmarks.length}`]];
   $('#wtabs').innerHTML = tabs.map(([k,l]) => `<button class="chip" type="button" data-t="${k}" aria-pressed="${k===wtab}">${l}</button>`).join('');
   let h = '';
   const rev = a => a.map((x,i)=>[x,i]).reverse();
@@ -1058,7 +1058,7 @@ function renderWords(){
   if(wtab==='words' && st.words.length) h += `<div class="wexp"><button class="chip" type="button" data-wexp="1">📤 単語を書き出す（Anki・表計算用CSV）</button></div>`;
   if(wtab==='marks') h = st.marks.length ? `<div class="list">${rev(st.marks).map(([m,i])=>`<div class="item"><span>${m.qa?esc(m.text):`<mark>${esc(m.text)}</mark>`}</span><small>${esc(m.date||'')}${m.storyTitle?'・'+esc(m.storyTitle):''}</small><button class="rm" type="button" data-rm="marks" data-i="${i}">削除</button></div>`).join('')}</div>` : `<p class="empty">記事の文章を選んで「マーカーで保存」を押すとここにたまります。Claudeへの質問と答えもここに残ります。</p>`;
   if(wtab==='zukan'){ h = '<p class="empty">読みこみ中…</p>'; buildZukan(); }
-  if(wtab==='bm') h = st.bookmarks.length ? `<div class="list">${rev(st.bookmarks).map(([b,i])=>`<div class="item"><a href="#today" data-go="${esc(b.date)}">${esc(b.title)}</a><small>${esc(b.date)}</small><button class="rm" type="button" data-rm="bookmarks" data-i="${i}">削除</button></div>`).join('')}</div>` : `<p class="empty">話題の「☆ 保存」を押すとここにたまります。</p>`;
+  if(wtab==='bm') h = st.bookmarks.length ? `<div class="list">${rev(st.bookmarks).map(([b,i])=>`<div class="item"><a href="#today" data-go="${esc(b.date)}">${esc(b.title)}</a><small>${esc(b.date)}</small><button class="rm" type="button" data-rm="bookmarks" data-i="${i}">削除</button></div>`).join('')}</div>` : `<p class="empty">話題の「🔖 あとで読む」を押すとここにたまります。</p>`;
   $('#wbody').innerHTML = h;
 }
 $('#wtabs').addEventListener('click', e => { const b=e.target.closest('button'); if(!b) return; wtab=b.dataset.t; renderWords(); });
@@ -1178,7 +1178,7 @@ function renderReview(){
   const wkBm = st.bookmarks.filter(b => (b.savedAt||b.date||'') >= w0);
   const wkMarks = st.marks.filter(m => (m.savedAt||m.date||'') >= w0);
   const known = st.words.filter(w=>w.known).length;
-  $('#rstats').innerHTML = [[wkWords.length,'今週ためた単語'],[wkBm.length,'今週保存した話題'],[wkMarks.length,'今週のマーカー・質問'],[`${known}/${st.words.length}`,'覚えた単語'],[Object.keys(st.quiz).length,'これまで予想した数'],[`🔥${streak().n}`,'連続で予想した日数'],[Object.keys((kisoGet()||{}).read||{}).length,'読んだ そもそも講座'],[(st.badges||[]).length+'/'+BADGES.length,'集めたバッジ']]
+  $('#rstats').innerHTML = [[wkWords.length,'今週ためた単語'],[wkBm.length,'今週あとで読むにした話'],[wkMarks.length,'今週のマーカー・質問'],[`${known}/${st.words.length}`,'覚えた単語'],[Object.keys(st.quiz).length,'これまで予想した数'],[`🔥${streak().n}`,'連続で予想した日数'],[Object.keys((kisoGet()||{}).read||{}).length,'読んだ そもそも講座'],[(st.badges||[]).length+'/'+BADGES.length,'集めたバッジ']]
     .map(([n,l])=>`<div class="stat"><b>${n}</b><span>${l}</span></div>`).join('');
   const {w, all, due} = curWord();
   const hd = n => ahead ? `先取りでふりかえり中（${all.length}語）` : `今日ふりかえる単語 あと${n}語`;
@@ -1198,7 +1198,7 @@ function renderReview(){
   }
   buildMiss();
   $('#rop').innerHTML = st.opinions.length ? st.opinions.slice().reverse().map(o=>`<div class="item"><b>${esc(o.choice)}</b><span>${esc(o.q)}</span><small>${esc(o.date)}・${o.id ? `<button class="gostory" type="button" data-gs="${esc(o.date)}|${esc(o.id)}">${esc(o.title)} →</button>` : esc(o.title)}</small></div>`).join('') : `<p class="empty">話題の最後にある「あなたはどう思う？」を選ぶと、ここに自分の考えがたまっていきます。</p>`;
-  $('#rbm').innerHTML = wkBm.length ? wkBm.map(b=>`<div class="item"><a href="#today" data-go="${esc(b.date)}">${esc(b.title)}</a><small>${esc(b.date)}</small></div>`).join('') : `<p class="empty">今週保存した話題はまだありません。</p>`;
+  $('#rbm').innerHTML = wkBm.length ? wkBm.map(b=>`<div class="item"><a href="#today" data-go="${esc(b.date)}">${esc(b.title)}</a><small>${esc(b.date)}</small></div>`).join('') : `<p class="empty">今週あとで読むにした話はまだありません。</p>`;
 }
 $('#rcard').addEventListener('click', e => {
   const b = e.target.closest('button'); if(!b) return;
