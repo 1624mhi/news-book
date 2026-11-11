@@ -302,6 +302,7 @@ body.noscroll{overflow:hidden}
 @media (prefers-reduced-motion: reduce){.burst{animation:none;opacity:0}.qopt.right.fresh{animation:none}}
 .week{display:grid;gap:12px;margin-bottom:18px}.wkn{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.wkr{display:grid;gap:6px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px}.wkr div{display:grid;grid-template-columns:84px 1fr 40px;gap:8px;align-items:center}.wkr i{height:10px;border-radius:99px;background:var(--rc,var(--accent));min-width:4px}.wkr small{color:var(--muted);text-align:right}.week h3{margin:4px 0 0;font-size:15px}.wfol{justify-self:start;margin-top:4px;--rc:var(--accent)}.wkr i[data-r="日本"]{background:var(--jp)}.wkr i[data-r="マレーシア"]{background:var(--my)}.wkr i[data-r="世界"]{background:var(--world)}
 .appnav a[data-v="review"]:not([data-n=""])[data-n]::after{content:attr(data-n);margin-left:4px;display:inline-block;min-width:18px;padding:0 5px;border-radius:99px;background:var(--accent);color:#fff;font-size:11px;line-height:18px;text-align:center}
+#offl{position:fixed;width:max-content;left:50%;top:8px;transform:translateX(-50%);z-index:90;max-width:calc(100% - 32px);background:var(--ink);color:var(--surface);font-size:12.5px;padding:7px 14px;border-radius:99px;box-shadow:0 4px 14px rgba(0,0,0,.2)}
 .srsd{letter-spacing:2px;color:var(--accent)}
 .alldone .pill{--rc:var(--accent);border-radius:12px;text-align:left}.alldone .kisonext{align-self:flex-start;margin:0}.alldone{flex-basis:100%;display:flex;flex-direction:column;gap:6px;padding:12px;border-radius:12px;background:color-mix(in srgb,var(--my) 10%,transparent)}.alldone>b{color:var(--my)}.alldone .dn{display:flex;flex-wrap:wrap;gap:6px;align-items:center}.alldone small{color:var(--muted)}
 .links{display:grid;gap:8px}
@@ -1715,5 +1716,8 @@ if(window.NEWSBOOK_SITE){
 })();
 </script>
 
+<script>(function(){ const show = () => { let d = document.getElementById('offl'); if(navigator.onLine){ if(d) d.remove(); return; }
+  if(!d){ d = document.createElement('div'); d.id = 'offl'; d.textContent = '📴 オフライン中：保存済みの号を表示しています'; document.body.appendChild(d); } };
+  addEventListener('online', show); addEventListener('offline', show); show(); })();</script>
 <script>try{ if(window.kisoRelated && document.querySelector('.alldone')) renderStories(); }catch(e){}</script>
 </body></html>
