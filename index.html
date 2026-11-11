@@ -302,7 +302,7 @@ body.noscroll{overflow:hidden}
 @keyframes okpulse{0%{transform:scale(1)}40%{transform:scale(1.03)}100%{transform:scale(1)}}
 @media (prefers-reduced-motion: reduce){.burst{animation:none;opacity:0}.qopt.right.fresh{animation:none}}
 .week{display:grid;gap:12px;margin-bottom:18px}.wkn{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.wkr{display:grid;gap:6px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px}.wkr div{display:grid;grid-template-columns:84px 1fr 40px;gap:8px;align-items:center}.wkr i{height:10px;border-radius:99px;background:var(--rc,var(--accent));min-width:4px}.wkr small{color:var(--muted);text-align:right}.week h3{margin:4px 0 0;font-size:15px}.wfol{justify-self:start;margin-top:4px;--rc:var(--accent)}.wkr i[data-r="日本"]{background:var(--jp)}.wkr i[data-r="マレーシア"]{background:var(--my)}.wkr i[data-r="世界"]{background:var(--world)}
-.appnav a[data-v="review"]:not([data-n=""])[data-n]::after{content:attr(data-n);margin-left:4px;display:inline-block;min-width:18px;padding:0 5px;border-radius:99px;background:var(--accent);color:#fff;font-size:11px;line-height:18px;text-align:center}
+.appnav a[data-v="review"]:not([data-n=""])[data-n]::after,.appnav a[data-v="today"]:not([data-n=""])[data-n]::after{content:attr(data-n);margin-left:4px;display:inline-block;min-width:18px;padding:0 5px;border-radius:99px;background:var(--accent);color:#fff;font-size:11px;line-height:18px;text-align:center}
 #offl{position:fixed;width:max-content;left:50%;top:8px;transform:translateX(-50%);z-index:90;max-width:calc(100% - 32px);background:var(--ink);color:var(--surface);font-size:12.5px;padding:7px 14px;border-radius:99px;box-shadow:0 4px 14px rgba(0,0,0,.2)}
 .card .q.qdef{font-size:16px;font-weight:600;line-height:1.7}
 .wed{display:grid;gap:6px}.wed textarea{font:inherit;font-size:14px;width:100%;box-sizing:border-box;border:1.5px solid var(--accent);border-radius:10px;padding:8px;background:var(--surface);color:var(--ink)}.wed>span{display:flex;gap:6px}
@@ -674,7 +674,7 @@ function tileHTML(s, hero){
     <span class="t-hook">${esc(s.hook||s.title)}</span>${s.hook?`<span class="t-title">${esc(s.title)}</span>`:''}
     <span class="t-state${a!=null?' done':''}">${state}</span></button>`;
 }
-function renderStories(){
+function renderStories(){ try{ navDue(); }catch(e){}
   let list = D.stories.filter(s => !qword || [s.title, s.hook, s.cat, s.region, ...(s.points||[]), s.background, ...(s.terms||[]).map(x => x.term)].join(' ').toLowerCase().includes(qword)).filter(s => filter==='すべて' || (filter==='★' ? isBm(s.id) : filter==='経済' ? /経済|ビジネス|市場|金融/.test(s.cat) : s.region===filter));
   renderMap();
   if(placeF) list = list.filter(s => s.place && (pgroups[placeF]||[]).includes(s.place[0]));
@@ -717,7 +717,7 @@ function stepSheet(dir){
 }
 function sheetSwipe(dir){
   const s = D.stories.find(x => x.id === openId); if(!s) return;
-  if(dir === 'keep' && !isBm(s.id)){ st.bookmarks.push({id:s.id, title:s.title, date:D.date, savedAt:today()}); save(); }
+  if(dir === 'keep' && !isBm(s.id)){ st.bookmarks.push({id:s.id, title:s.title, date:D.date, savedAt:today()}); save();  navDue(); }
   const el = $('#sheetin'); el.classList.remove('slide-l','slide-r');
   el.style.transition = 'transform .26s ease, opacity .26s ease';
   el.style.transform = `translateX(${dir==='keep'?130:-130}%) rotate(${dir==='keep'?16:-16}deg)`; el.style.opacity = '0';
@@ -1105,7 +1105,7 @@ $('#addword').addEventListener('submit', e => {
 let qi = 0, reveal = false, curTerm = null, ahead = false;
 const SRS = [1, 3, 7, 14];
 const addDays = n => { const d = new Date(); d.setDate(d.getDate() + n); return d.toLocaleDateString('sv-SE',{timeZone:'Asia/Kuala_Lumpur'}); };
-function navDue(){ const a = document.querySelector('.appnav a[data-v="review"]'); if(a){ const n = srsPool().due.length; a.dataset.n = n ? n : ''; } }
+function navDue(){ const a = document.querySelector('.appnav a[data-v="review"]'); if(a){ const n = srsPool().due.length; a.dataset.n = n ? n : ''; }  const b = document.querySelector('.appnav a[data-v="today"]'); if(b){ const m = D.stories.filter(s => isBm(s.id) && (!s.quiz || st.quiz[qkey(s)] == null)).length; b.dataset.n = m ? m : ''; } }
 function srsPool(){
   const t = today(), ws = st.words.filter(w => !w.known).sort((a, b) => (a.due||'').localeCompare(b.due||'') || (a.lastAt||0) - (b.lastAt||0));
   return {all: ws, due: ws.filter(w => !w.due || w.due <= t)};
@@ -1321,7 +1321,7 @@ function renderSwipe(){
 }
 function swipeDone(dir){
   const s = swipeList()[si]; if(!s) return;
-  if(dir === 'keep'){ if(!isBm(s.id)){ st.bookmarks.push({id:s.id, title:s.title, date:D.date, savedAt:today()}); save(); } kept++; }
+  if(dir === 'keep'){ if(!isBm(s.id)){ st.bookmarks.push({id:s.id, title:s.title, date:D.date, savedAt:today()}); save(); navDue(); } kept++; }
   const card = $('#deck .front');
   if(card){ card.classList.add('anim'); card.style.transform = `translateX(${dir==='keep'?120:-120}%) rotate(${dir==='keep'?18:-18}deg)`; card.style.opacity = '0'; }
   si++; swSave(); setTimeout(renderSwipe, 230);
