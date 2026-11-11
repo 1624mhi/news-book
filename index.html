@@ -303,11 +303,14 @@ body.noscroll{overflow:hidden}
 .swb{width:30px;height:30px;border-radius:50%;border:1px solid color-mix(in srgb,var(--rc) 40%,transparent);background:var(--surface);color:var(--rc);font-size:18px;line-height:1;cursor:pointer}
 @keyframes slL{from{transform:translateX(40px);opacity:.3}to{transform:none;opacity:1}}
 @keyframes slR{from{transform:translateX(-40px);opacity:.3}to{transform:none;opacity:1}}
-.sheet-in.slide-l{animation:slL .22s ease-out}.sheet-in.slide-r{animation:slR .22s ease-out}
+.sheet-in.slide-up{animation:slU .24s ease-out}@keyframes slU{from{transform:translateY(24px) scale(.97);opacity:.4}to{transform:none;opacity:1}}
+.sheet-in>.stamp{top:84px;z-index:5;font-size:22px}.sheet-in{will-change:transform}
+.swb.no{color:var(--muted)}.sheet-in.slide-l{animation:slL .22s ease-out}.sheet-in.slide-r{animation:slR .22s ease-out}
 @media (prefers-reduced-motion:reduce){.sheet-in.slide-l,.sheet-in.slide-r{animation:none}}
 .more{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:12.5px}
 .more::before,.more::after{content:"";flex:1;border-top:1px dashed var(--line)}
 @media (max-width:560px){.appnav{gap:0;justify-content:space-between}.appnav a{font-size:12px;padding:6px 4px;letter-spacing:-.02em}}
+@media (max-width:560px){.sh-hero{padding:14px 16px 16px;gap:6px}.sh-hero .emo{font-size:38px}.minimap{width:150px}.sh-acts{gap:6px}.sh-acts .pill{font-size:12px;padding:5px 10px}.sh-hero .sub{font-size:13px}}
 .archive .myq{display:inline-block;margin-top:4px;font-size:12px;font-weight:700;color:var(--my)}
 </style>
 
@@ -543,7 +546,7 @@ function closeSheet(){ try{ if(speaking){ speechSynthesis.cancel(); speaking = n
 $('#sheet').addEventListener('click', e => { if(e.target.id === 'sheet') closeSheet(); });
 document.addEventListener('keydown', e => { if(e.key === 'Escape' && openId) closeSheet(); });
 function swNav(s){ const o = sheetOrder(), i = o.indexOf(s.id); if(o.length < 2 || i < 0) return '';
-  return `<div class="swnav"><button type="button" class="swb" data-step="-1" aria-label="前の話">‹</button><span>${i+1} / ${o.length}　<small>左右にスワイプで前後の話へ</small></span><button type="button" class="swb" data-step="1" aria-label="次の話">›</button></div>`; }
+  return `<div class="swnav"><button type="button" class="swb no" data-sw="skip" aria-label="とばして次の話へ">✕</button><span>${i+1} / ${o.length}　<small>👈 とばす　あとで読む 👉</small></span><button type="button" class="swb yes" data-sw="keep" aria-label="あとで読むに入れて次の話へ">🔖</button></div>`; }
 function sheetOrder(){ return (tileOrder.length ? tileOrder : D.stories.map(x => x.id)).filter(id => D.stories.some(x => x.id === id)); }
 function stepSheet(dir){
   const o = sheetOrder(); if(o.length < 2 || !openId) return;
@@ -551,18 +554,41 @@ function stepSheet(dir){
   const el = $('#sheetin'); el.classList.remove('slide-l','slide-r'); void el.offsetWidth;
   openSheet(nid); el.classList.add(dir > 0 ? 'slide-l' : 'slide-r');
 }
+function sheetSwipe(dir){
+  const s = D.stories.find(x => x.id === openId); if(!s) return;
+  if(dir === 'keep' && !isBm(s.id)){ st.bookmarks.push({id:s.id, title:s.title, date:D.date, savedAt:today()}); save(); }
+  const el = $('#sheetin'); el.classList.remove('slide-l','slide-r');
+  el.style.transition = 'transform .26s ease, opacity .26s ease';
+  el.style.transform = `translateX(${dir==='keep'?130:-130}%) rotate(${dir==='keep'?16:-16}deg)`; el.style.opacity = '0';
+  if(dir === 'keep') toastMsg('🔖 「あとで読む」に入れました');
+  setTimeout(() => { el.style.transition = ''; el.style.transform = ''; el.style.opacity = '';
+    const o = sheetOrder(), i = o.indexOf(s.id); if(o.length < 2){ closeSheet(); renderStories(); return; }
+    openSheet(o[(i + 1) % o.length]); el.classList.add('slide-up'); renderStories(); }, 260);
+}
 (() => {
-  const sh = $('#sheet'); let sx = 0, sy = 0, tracking = false;
-  sh.addEventListener('touchstart', e => { if(e.touches.length !== 1){ tracking = false; return; }
-    if(e.target.closest('.swipe-no, .spec, input, textarea, select')){ tracking = false; return; }
-    tracking = true; sx = e.touches[0].clientX; sy = e.touches[0].clientY; }, {passive:true});
-  sh.addEventListener('touchend', e => { if(!tracking) return; tracking = false;
-    const t = e.changedTouches[0], dx = t.clientX - sx, dy = t.clientY - sy;
-    const sl = getSelection(); if(sl && sl.toString().trim()) return;
-    if(Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.6) stepSheet(dx < 0 ? 1 : -1); }, {passive:true});
+  const sh = $('#sheet'); let sx = 0, sy = 0, dx = 0, mode = null;
+  const stamps = v => { const y = $('#sheetin .stamp.yes'), n = $('#sheetin .stamp.no'); if(y) y.style.opacity = Math.max(0, Math.min(1, v/100)); if(n) n.style.opacity = Math.max(0, Math.min(1, -v/100)); };
+  sh.addEventListener('touchstart', e => { mode = null; dx = 0;
+    if(e.touches.length !== 1 || e.target.closest('.swipe-no, .spec, input, textarea, select')){ mode = 'off'; return; }
+    sx = e.touches[0].clientX; sy = e.touches[0].clientY; }, {passive:true});
+  sh.addEventListener('touchmove', e => { if(mode === 'off' || mode === 'v') return;
+    const t = e.touches[0], mx = t.clientX - sx, my = t.clientY - sy;
+    if(!mode){ if(Math.abs(mx) < 10 && Math.abs(my) < 10) return;
+      const sl = getSelection(); if(sl && sl.toString().trim()){ mode = 'off'; return; }
+      mode = Math.abs(mx) > Math.abs(my) * 1.2 ? 'h' : 'v'; if(mode === 'v') return; }
+    e.preventDefault(); dx = mx;
+    const el = $('#sheetin'); el.style.transition = 'none'; el.style.transform = `translateX(${dx}px) rotate(${dx/22}deg)`; stamps(dx);
+  }, {passive:false});
+  const end = () => { if(mode !== 'h'){ mode = null; return; } mode = null;
+    const el = $('#sheetin');
+    if(dx > 100) return sheetSwipe('keep');
+    if(dx < -100) return sheetSwipe('skip');
+    el.style.transition = 'transform .2s ease'; el.style.transform = ''; stamps(0); };
+  sh.addEventListener('touchend', end); sh.addEventListener('touchcancel', end);
   document.addEventListener('keydown', e => { if(!openId || e.target.closest && e.target.closest('input,textarea')) return;
-    if(e.key === 'ArrowRight') stepSheet(1); else if(e.key === 'ArrowLeft') stepSheet(-1); });
+    if(e.key === 'ArrowRight') sheetSwipe('keep'); else if(e.key === 'ArrowLeft') sheetSwipe('skip'); });
 })();
+function toastMsg(m){ const d = document.createElement('div'); d.className = 'seltoast'; d.textContent = m; document.body.appendChild(d); setTimeout(() => d.remove(), 1600); }
 function spectrumHTML(s){
   const cols = [[],[],[],[]];
   s.headlines.forEach(h => cols[leanOf(h.lean||'')].push(h));
@@ -640,7 +666,7 @@ function renderSheet(){
       ${a!=null ? `<div class="qres"><b>${a===qz.answer?'◎ 正解！':'△ 正解は '+'ABC'[qz.answer]+' でした'}</b>　${esc(qz.explain)}</div>` : '<div class="lock">予想して選ぶと、何が起きたのかが開きます</div>'}</div>` : '';
   const term = s.terms.find(t => t.term === openTerm), used = new Set();
   $('#sheetin').dataset.r = s.region;
-  $('#sheetin').innerHTML = `<article class="story" data-id="${esc(s.id)}">
+  $('#sheetin').innerHTML = `<span class="stamp yes">あとで読む</span><span class="stamp no">とばす</span><article class="story" data-id="${esc(s.id)}">
     <div class="sh-hero"><button class="x" type="button" data-close="1" aria-label="閉じる">×</button>
       <div class="meta"><span class="reg" data-r="${esc(s.region)}">${esc(s.region)}</span><span>${esc(s.cat)}</span><span class="count">${n}媒体が報道</span></div>
       ${swNav(s)}
@@ -685,7 +711,7 @@ function onStoryClick(e){
   if(b.dataset.tw){ e.stopPropagation(); if($('#tip') && $('#tip').dataset.for === b.dataset.tw){ hideTip(); return; } showTip(b); if($('#tip')) $('#tip').dataset.for = b.dataset.tw; return; }
   if(b.dataset.open){ openSheet(b.dataset.open); return; }
   if(b.dataset.close){ closeSheet(); return; }
-  if(b.dataset.step){ stepSheet(+b.dataset.step); return; }
+  if(b.dataset.sw){ sheetSwipe(b.dataset.sw); return; }
   if(b.dataset.next){ openSheet(b.dataset.next); return; }
   const s = D.stories.find(x => x.id === openId);
   if(b.dataset.speak && s){ speakStory(s); return; }
@@ -766,7 +792,7 @@ function saveSel(){
   save(); selbtn.hidden = true; selText = ''; getSelection().removeAllRanges(); renderStories();
   toastSel();
 }
-function toastSel(){ const d = document.createElement('div'); d.className = 'seltoast'; d.textContent = '🖍 マーカーで保存しました'; document.body.appendChild(d); setTimeout(() => d.remove(), 1600); }
+function toastSel(){ toastMsg('🖍 マーカーで保存しました'); }
 
 /* ---------- 単語帳 ---------- */
 let wtab = 'words';
