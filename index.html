@@ -319,7 +319,8 @@ body.noscroll{overflow:hidden}
 .top3{display:grid;gap:2px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:10px 12px;margin-bottom:10px}.top3 h3{margin:0 0 4px;font-size:14px}
 .top3 button{display:grid;grid-template-columns:auto auto 1fr auto;gap:8px;align-items:center;text-align:left;font:inherit;color:var(--ink);background:none;border:0;border-top:1px dashed var(--line);padding:8px 2px;cursor:pointer}
 .top3 button:first-of-type{border-top:0}.top3 .n{font-family:var(--f-mono);color:var(--accent);font-weight:700}.top3 .e{font-size:20px}.top3 .h{font-size:14px;line-height:1.5;font-weight:700}.top3 small{color:var(--muted);font-size:11px;white-space:nowrap}
-.xfer{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:10px 14px;margin-top:12px}.xfer summary{font-weight:700;cursor:pointer}.xfer p{font-size:13px;color:var(--muted);line-height:1.6}.xfer textarea{width:100%;box-sizing:border-box;font:inherit;font-size:12px;border:1px solid var(--line);border-radius:10px;padding:8px;background:var(--bg);color:var(--ink);margin:8px 0}.xb{display:flex;gap:8px;flex-wrap:wrap}
+.xfer{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:10px 14px;margin-top:12px}.xfer summary{font-weight:700;cursor:pointer}.xfer p{font-size:13px;color:var(--muted);line-height:1.6}.xfer input[type=password]{width:100%;box-sizing:border-box;font:inherit;font-size:14px;border:1px solid var(--line);border-radius:10px;padding:8px 10px;background:var(--bg);color:var(--ink);margin:6px 0}
+.xfer textarea{width:100%;box-sizing:border-box;font:inherit;font-size:12px;border:1px solid var(--line);border-radius:10px;padding:8px;background:var(--bg);color:var(--ink);margin:8px 0}.xb{display:flex;gap:8px;flex-wrap:wrap}
 .skiso{justify-self:start;font-size:12.5px;font-weight:700;color:var(--accent);text-decoration:none;background:var(--accent-soft);border-radius:99px;padding:5px 12px}
 .tour{background:color-mix(in srgb,var(--marker) 25%,var(--surface));border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-bottom:10px;font-size:13.5px;line-height:1.6}.tour ol{margin:6px 0 8px;padding-left:1.3em}
 :focus-visible{outline:2.5px solid var(--accent);outline-offset:2px}
@@ -409,6 +410,13 @@ html.fs2 .sh-body,html.fs2 #v-kiso,html.fs2 #wbody,html.fs2 .sh-hero h2{zoom:1.2
     <div><h3>はずれた予想に再挑戦</h3><div class="list" id="rmiss"></div></div>
     <div><h3>あなたが選んだ意見</h3><div class="list" id="rop"></div></div>
     <div><h3>今週保存した話題</h3><div class="list" id="rbm"></div></div>
+    <details class="xfer" id="gsync"><summary>🔄 スマホとパソコンを自動で同期（GitHub）</summary>
+      <p id="gstat">まだつながっていません。</p>
+      <div id="gform"><input type="password" id="gtok" placeholder="GitHubのトークン（ghp_… または github_pat_…）" autocomplete="off">
+      <div class="xb"><button type="button" class="pill" id="gconn">つなぐ</button></div>
+      <p>トークンはこの端末の中だけに保存され、GitHubとのやりとりにだけ使います。</p></div>
+      <div class="xb" id="goff" hidden><button type="button" class="pill" id="gnow">今すぐ同期</button><button type="button" class="pill" id="gdis">この端末の接続を外す</button></div>
+    </details>
     <details class="xfer" id="xfer"><summary>📲 別の端末に引き継ぐ</summary>
       <p id="xnote"></p>
       <div class="xb"><button type="button" class="pill" id="xcopy">引き継ぎコードをコピー</button></div>
@@ -504,6 +512,7 @@ function save(){
   checkBadges();
   const k = kisoGet(); if(k) st.kiso = k;
   try { localStorage.setItem(KEY, JSON.stringify(st)); } catch(e) {}
+  if(window.gistPush && gistPush()) return;
   if(!stateRef || !remoteReady){ setDirty(true); return; }
   clearTimeout(saveTimer);
   saveTimer = setTimeout(() => {
@@ -1196,6 +1205,64 @@ if(window.NEWSBOOK_SITE){
   }).catch(() => {});
 }
 
+
+/* ---------- GitHub Gist で同期（公開サイト用・mio ひとり用） ---------- */
+(() => {
+  const TK = 'newsbook-gist-token', GK = 'newsbook-gist-id', FN = 'newsbook-state.json', DESC = 'newsbook-sync (ニュース帳の記録)';
+  const ls = (k, v) => { try{ if(v === undefined) return localStorage.getItem(k); if(v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); }catch(e){ return null; } };
+  let tok = ls(TK), gid = ls(GK), timer = null, busy = false, lastPushed = '';
+  const api = (path, opt = {}) => fetch('https://api.github.com' + path, Object.assign({}, opt, {headers: {'Authorization': 'Bearer ' + tok, 'Accept': 'application/vnd.github+json', 'Content-Type': 'application/json'}})).then(r => { if(!r.ok) throw r.status; return r.json(); });
+  const stat = m => { const e = $('#gstat'); if(e) e.textContent = m; setSync(m); };
+  const ui = () => { const on = !!tok; if($('#gform')) $('#gform').hidden = on; if($('#goff')) $('#goff').hidden = !on; };
+  const body = () => { const k = kisoGet(); if(k) st.kiso = k; return JSON.stringify(st); };
+  async function findGist(){
+    if(gid) return gid;
+    for(let page = 1; page <= 5; page++){
+      const list = await api('/gists?per_page=100&page=' + page);
+      const g = list.find(x => x.files && x.files[FN]); if(g){ gid = g.id; ls(GK, gid); return gid; }
+      if(list.length < 100) break;
+    }
+    const g = await api('/gists', {method: 'POST', body: JSON.stringify({description: DESC, public: false, files: {[FN]: {content: body()}}})});
+    gid = g.id; ls(GK, gid); lastPushed = body(); return gid;
+  }
+  async function pull(){
+    if(!tok || busy) return; busy = true;
+    try{
+      await findGist();
+      const g = await api('/gists/' + gid), f = g.files && g.files[FN];
+      let remote = null;
+      if(f){ const txt = f.truncated ? await fetch(f.raw_url).then(r => r.text()) : f.content; try{ remote = JSON.parse(txt); }catch(e){} }
+      if(remote){
+        const before = JSON.stringify(st);
+        st = isDirty() ? mergeState(remote, st) : mergeState(remote, {});
+        if(st.kiso) kisoPut(st.kiso);
+        try{ localStorage.setItem(KEY, JSON.stringify(st)); }catch(e){}
+        if(JSON.stringify(st) !== before) route();
+        lastPushed = JSON.stringify(remote);
+      }
+      if(isDirty() || !remote){ busy = false; await push(); }
+      stat('🔄 どの端末でも同期されます（GitHub）');
+    }catch(e){ stat(e === 401 ? 'トークンが使えません。もう一度つないでください' : '同期できませんでした。この端末には保存しています'); }
+    busy = false;
+  }
+  async function push(){
+    if(!tok || !gid) return;
+    const b = body(); if(b === lastPushed){ setDirty(false); return; }
+    await api('/gists/' + gid, {method: 'PATCH', body: JSON.stringify({files: {[FN]: {content: b}}})});
+    lastPushed = b; setDirty(false); stat('🔄 どの端末でも同期されます（GitHub）');
+  }
+  window.gistPush = () => { if(!tok) return false; setDirty(true); clearTimeout(timer); timer = setTimeout(() => push().catch(() => stat('同期できませんでした。この端末には保存しています')), 2500); return true; };
+  $('#gconn').addEventListener('click', async () => {
+    const v = $('#gtok').value.trim(); if(!v) return;
+    tok = v; ls(TK, v); gid = null; ls(GK, null); $('#gtok').value = ''; ui(); stat('つないでいます…');
+    setDirty(true); await pull();
+  });
+  $('#gnow').addEventListener('click', () => pull());
+  $('#gdis').addEventListener('click', () => { tok = null; gid = null; ls(TK, null); ls(GK, null); ui(); stat('この端末に保存しています'); });
+  if(!window.NEWSBOOK_SITE && $('#gsync')) $('#gsync').hidden = true;
+  ui();
+  if(tok){ pull(); document.addEventListener('visibilitychange', () => { if(document.visibilityState === 'visible') pull(); else push().catch(() => {}); }); }
+})();
 /* ---------- サーバー連携（使えるときだけ） ---------- */
 (async () => {
   const use = n => (window.claude && window.claude.use) ? window.claude.use(n).catch(() => null) : Promise.resolve(null);
