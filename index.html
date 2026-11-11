@@ -1155,7 +1155,7 @@ function renderReview(){
     if(ch){ const ans = wq[w.term];
       $('#rcard').innerHTML = `<div class="card"><small>${hd(due.length)}　${dots}　${rv ? '逆から：この説明はどの単語？' : '意味はどれ？'}</small>
         <div class="q${rv ? ' qdef' : ''}">${esc(rv ? w.def : w.term)}</div><div class="wqopts">${ch.map((d,i) => `<button type="button" class="qopt${ans!=null && d===ansv?' right':''}${ans===i && d!==ansv?' wrong':''}" data-wq="${i}" ${ans!=null?'disabled':''}>${esc(shortText(d, 60))}</button>`).join('')}</div>
-        ${ans!=null ? `<div class="a">${ch[ans]===ansv?'◎ 正解！ '+(w.known?'これで覚えました 🎓':'次は '+esc((w.due||'').slice(5).replace('-','/'))+' にもう一度'):'△ 正解は「'+esc(w.term)+'」：'+esc(w.def)+'<br><small>あとでもう一度出します</small>'}</div><div class="tabs"><button class="chip" type="button" data-q="next">次へ</button>${w.known?'':'<button class="chip" type="button" data-q="known">もう覚えた</button>'}</div>` : ''}</div>`;
+        ${ans!=null ? `<div class="a">${ch[ans]===ansv?'◎ 正解！ '+(w.known?'これで覚えました 🎓':'次は '+esc((w.due||'').slice(5).replace('-','/'))+' にもう一度'):'△ 正解は「'+esc(w.term)+'」：'+esc(w.def)+'<br><small>あとでもう一度出します</small>'}${w.story && w.date ? `<br><button class="gostory" type="button" data-gs="${esc(w.date)}|${esc(w.story)}">📰 この単語が出てきた記事：${esc(shortText(w.storyTitle||'', 40))} →</button>` : ''}</div><div class="tabs"><button class="chip" type="button" data-q="next">次へ</button>${w.known?'':'<button class="chip" type="button" data-q="known">もう覚えた</button>'}</div>` : ''}</div>`;
     } else
     $('#rcard').innerHTML = `<div class="card"><small>${hd(due.length)}　${dots}</small>
       <div class="q">${esc(w.term)}</div>${reveal?`<div class="a">${esc(w.def||'（メモなし）')}</div>${w.storyTitle?`<small>${esc(w.storyTitle)}</small>`:''}`:`<div class="a">意味を思い出してから、めくってみましょう。</div>`}
@@ -1168,6 +1168,7 @@ function renderReview(){
 $('#rcard').addEventListener('click', e => {
   const b = e.target.closest('button'); if(!b) return;
   const {w} = curWord();
+  if(b.dataset.gs){ const [d, id] = b.dataset.gs.split('|'); goStory(d, id); return; }
   if(b.dataset.q==='ahead'){ ahead = true; curTerm = null; renderReview(); return; }
   if(b.dataset.wq != null && w){ const i = +b.dataset.wq, rv = isRev(w) && termChoices(w), ch = rv || wordChoices(w); wq[w.term] = i; srsAnswer(w, !!ch && ch[i] === (rv ? w.term : w.def)); renderReview(); return; }
   if(b.dataset.q==='flip'){ reveal = true; }
