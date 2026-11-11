@@ -1060,6 +1060,7 @@ function sugHTML(){
 }
 var wedit = -1;
 function renderWords(){
+  { const ym = {}; D.stories.forEach(s => (s.terms||[]).forEach(x => { if(x.yomi) ym[x.term] = x.yomi; })); st.words.forEach(w => { if(!w.yomi && ym[w.term]) w.yomi = ym[w.term]; }); }
   const tabs = [['words',`単語 ${st.words.length}`],['zukan','登場人物・国の図鑑'],['marks',`マーカー・質問 ${st.marks.length}`],['bm',`あとで読む ${st.bookmarks.length}`]];
   $('#wtabs').innerHTML = tabs.map(([k,l]) => `<button class="chip" type="button" data-t="${k}" aria-pressed="${k===wtab}">${l}</button>`).join('');
   let h = '';
@@ -1076,7 +1077,7 @@ $('#wtabs').addEventListener('click', e => { const b=e.target.closest('button');
 $('#wbody').addEventListener('click', e => {
   const sg = e.target.closest('[data-sugw]');
   if(sg){ const s = D.stories.find(x => x.id === sg.dataset.story) || {};
-    if(!st.words.some(w => w.term === sg.dataset.sugw)) st.words.push({term:sg.dataset.sugw, def:sg.dataset.def, story:s.id, storyTitle:s.title||'', date:D.date, savedAt:today(), known:false});
+    if(!st.words.some(w => w.term === sg.dataset.sugw)) st.words.push({term:sg.dataset.sugw, def:sg.dataset.def, yomi:((s.terms||[]).find(x => x.term === sg.dataset.sugw)||{}).yomi||'', story:s.id, storyTitle:s.title||'', date:D.date, savedAt:today(), known:false});
     save(); renderWords(); toastMsg('📒 単語帳に入れました'); return; }
   const b = e.target.closest('button,a'); if(!b) return;
   if(b.dataset.wed){ wedit = +b.dataset.wed; renderWords(); const ta = $('#wed-in'); if(ta){ ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); } return; }
