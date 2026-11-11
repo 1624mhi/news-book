@@ -5,6 +5,7 @@ self.addEventListener('activate', e => e.waitUntil(self.clients.claim()));
 self.addEventListener('fetch', e => {
   const u = new URL(e.request.url);
   if (e.request.method !== 'GET' || u.origin !== location.origin) return;
-  e.respondWith(fetch(e.request).then(r => { if (r.ok) { const cp = r.clone(); caches.open(C).then(c => c.put(e.request, cp)); } return r; })
+  const fresh = e.request.mode === 'navigate' || /\.(json|html)$|\/$/.test(u.pathname);
+  e.respondWith((fresh ? fetch(u.href, {cache: 'no-cache'}) : fetch(e.request)).then(r => { if (r.ok) { const cp = r.clone(); caches.open(C).then(c => c.put(e.request, cp)); } return r; })
     .catch(() => caches.match(e.request).then(m => m || caches.match('./index.html'))));
 });
