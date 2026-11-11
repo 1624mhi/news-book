@@ -325,6 +325,7 @@ body.noscroll{overflow:hidden}
 .tour{background:color-mix(in srgb,var(--marker) 25%,var(--surface));border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-bottom:10px;font-size:13.5px;line-height:1.6}.tour ol{margin:6px 0 8px;padding-left:1.3em}
 :focus-visible{outline:2.5px solid var(--accent);outline-offset:2px}
 .tile.q-ok{box-shadow:inset 4px 0 0 var(--my)}.tile.q-ng{box-shadow:inset 4px 0 0 var(--jp)}.tile.q-ok,.tile.q-ng{opacity:.85}
+.aemo{font-size:18px;letter-spacing:2px;line-height:1.5}
 .toprow{display:flex;justify-content:space-between;align-items:center;gap:8px}
 .fsbtn{font:inherit;font-size:12px;color:var(--muted);background:var(--surface);border:1px solid var(--line);border-radius:99px;padding:3px 10px;cursor:pointer;flex:none}.fsbtn b{color:var(--ink)}
 html.fs1 .sh-body,html.fs1 #v-kiso,html.fs1 #wbody,html.fs1 .sh-hero h2{zoom:1.12}
@@ -1079,7 +1080,7 @@ $('#rbm').addEventListener('click', e => { const a=e.target.closest('a'); if(a &
 /* ---------- 過去の号 ---------- */
 function renderArchive(){
   $('#arch').innerHTML = editions.map(e => { const n = Object.keys(st.quiz).filter(k => k.startsWith(e.date+'|')).length;
-    return `<a href="#today" data-go="${esc(e.date)}"><small>${esc(e.date.replace(/-/g,'.'))}・${e.count}話題</small>${(e.titles||[]).map(t=>`<span>${esc(t)}</span>`).join('')}<span class="myq">${n ? `予想した話 ${n}／${e.count}` : 'まだ予想していません →'}</span><span class="pbar"><i style="width:${Math.round(n/Math.max(1,e.count)*100)}%"></i></span></a>`; }).join('');
+    return `<a href="#today" data-go="${esc(e.date)}"><small>${esc(e.date.replace(/-/g,'.'))}・${e.count}話題</small>${e.emojis?`<span class="aemo">${esc(e.emojis)}</span>`:''}${(e.titles||[]).map(t=>`<span>${esc(t)}</span>`).join('')}<span class="myq">${n ? `予想した話 ${n}／${e.count}` : 'まだ予想していません →'}</span><span class="pbar"><i style="width:${Math.round(n/Math.max(1,e.count)*100)}%"></i></span></a>`; }).join('');
 }
 $('#arch').addEventListener('click', e => { const a=e.target.closest('a'); if(a && a.dataset.go) openEdition(a.dataset.go); });
 
