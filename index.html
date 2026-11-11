@@ -1068,7 +1068,7 @@ function renderWords(){
   if(wtab==='words' && st.words.length) h += `<div class="wexp"><button class="chip" type="button" data-wexp="1">📤 単語を書き出す（Anki・表計算用CSV）</button></div>`;
   if(wtab==='marks') h = st.marks.length ? `<div class="list">${rev(st.marks).map(([m,i])=>`<div class="item"><span>${m.qa?esc(m.text):`<mark>${esc(m.text)}</mark>`}</span><small>${esc(m.date||'')}${m.storyTitle?'・'+esc(m.storyTitle):''}</small><button class="rm" type="button" data-rm="marks" data-i="${i}">削除</button></div>`).join('')}</div>` : `<p class="empty">記事の文章を選んで「マーカーで保存」を押すとここにたまります。Claudeへの質問と答えもここに残ります。</p>`;
   if(wtab==='zukan'){ h = '<p class="empty">読みこみ中…</p>'; buildZukan(); }
-  if(wtab==='bm') h = st.bookmarks.length ? `<div class="list">${rev(st.bookmarks).map(([b,i])=>`<div class="item"><a href="#today" data-go="${esc(b.date)}">${esc(b.title)}</a><small>${esc(b.date)}</small><button class="rm" type="button" data-rm="bookmarks" data-i="${i}">削除</button></div>`).join('')}</div>` : `<p class="empty">話題の「🔖 あとで読む」を押すとここにたまります。</p>`;
+  if(wtab==='bm') h = st.bookmarks.length ? `<div class="list">${rev(st.bookmarks).map(([b,i])=>`<div class="item">${b.id ? `<button class="gostory" type="button" data-gs="${esc(b.date)}|${esc(b.id)}">${esc(b.title)} →</button>` : `<a href="#today" data-go="${esc(b.date)}">${esc(b.title)}</a>`}<small>${esc(b.date)}</small><button class="rm" type="button" data-rm="bookmarks" data-i="${i}">削除</button></div>`).join('')}</div>` : `<p class="empty">話題の「🔖 あとで読む」を押すとここにたまります。</p>`;
   $('#wbody').innerHTML = h;
 }
 $('#wtabs').addEventListener('click', e => { const b=e.target.closest('button'); if(!b) return; wtab=b.dataset.t; renderWords(); });
@@ -1208,7 +1208,7 @@ function renderReview(){
   }
   buildMiss();
   $('#rop').innerHTML = st.opinions.length ? st.opinions.slice().reverse().map(o=>`<div class="item"><b>${esc(o.choice)}</b><span>${esc(o.q)}</span><small>${esc(o.date)}・${o.id ? `<button class="gostory" type="button" data-gs="${esc(o.date)}|${esc(o.id)}">${esc(o.title)} →</button>` : esc(o.title)}</small></div>`).join('') : `<p class="empty">話題の最後にある「あなたはどう思う？」を選ぶと、ここに自分の考えがたまっていきます。</p>`;
-  $('#rbm').innerHTML = wkBm.length ? wkBm.map(b=>`<div class="item"><a href="#today" data-go="${esc(b.date)}">${esc(b.title)}</a><small>${esc(b.date)}</small></div>`).join('') : `<p class="empty">今週あとで読むにした話はまだありません。</p>`;
+  $('#rbm').innerHTML = wkBm.length ? wkBm.map(b=>`<div class="item">${b.id ? `<button class="gostory" type="button" data-gs="${esc(b.date)}|${esc(b.id)}">${esc(b.title)} →</button>` : `<a href="#today" data-go="${esc(b.date)}">${esc(b.title)}</a>`}<small>${esc(b.date)}</small></div>`).join('') : `<p class="empty">今週あとで読むにした話はまだありません。</p>`;
 }
 $('#rcard').addEventListener('click', e => {
   const b = e.target.closest('button'); if(!b) return;
@@ -1224,7 +1224,7 @@ $('#rcard').addEventListener('click', e => {
 });
 $('#rop').addEventListener('click', e => { const b = e.target.closest('[data-gs]'); if(!b) return; const [d, id] = b.dataset.gs.split('|'); goStory(d, id); });
 $('#rfol').addEventListener('click', e => { const b = e.target.closest('[data-gs]'); if(!b) return; const [d, id] = b.dataset.gs.split('|'); goStory(d, id); });
-$('#rbm').addEventListener('click', e => { const a=e.target.closest('a'); if(a && a.dataset.go) openEdition(a.dataset.go); });
+$('#rbm').addEventListener('click', e => { const g = e.target.closest('[data-gs]'); if(g){ const [d, id] = g.dataset.gs.split('|'); goStory(d, id); return; } const a=e.target.closest('a'); if(a && a.dataset.go) openEdition(a.dataset.go); });
 
 /* ---------- 過去の号 ---------- */
 var weekPins = [];
