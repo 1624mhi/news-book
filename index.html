@@ -317,6 +317,7 @@ body.noscroll{overflow:hidden}
 .memo{display:grid;gap:8px;margin:18px 0}.memo h3{margin:0}.memo textarea{font:inherit;font-size:14.5px;width:100%;box-sizing:border-box;border:1.5px solid var(--line);border-radius:12px;padding:10px;background:var(--surface);color:var(--ink);resize:vertical}.memo textarea:focus{border-color:var(--accent);outline:none}.memo .pill{justify-self:start;--rc:var(--accent)}
 .mhd{font-size:13px;color:var(--muted);margin:4px 0 8px}.mhd b{color:var(--accent);font-size:16px}
 .cal{display:grid;gap:6px;max-width:360px}.calh,.calg{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}.calh span{font-size:11px;color:var(--muted);text-align:center}.calg i{aspect-ratio:1;border-radius:6px;display:grid;place-items:center;font-size:11px;font-style:normal;color:var(--muted)}.calg i.l0{background:var(--line)}.calg i.l1{background:color-mix(in srgb,var(--accent) 30%,transparent);color:var(--ink)}.calg i.l2{background:color-mix(in srgb,var(--accent) 60%,transparent);color:#fff}.calg i.l3{background:var(--accent);color:#fff}.calg i.td{outline:2px solid var(--ink);outline-offset:1px}.cal small{color:var(--muted)}
+#wfind{font:inherit;font-size:15px;width:100%;box-sizing:border-box;border:1.5px solid var(--line);border-radius:12px;padding:9px 12px;margin-bottom:10px;background:var(--surface);color:var(--ink)}
 .srsd{letter-spacing:2px;color:var(--accent)}
 .alldone .pill{--rc:var(--accent);border-radius:12px;text-align:left}.alldone .kisonext{align-self:flex-start;margin:0}.alldone{flex-basis:100%;display:flex;flex-direction:column;gap:6px;padding:12px;border-radius:12px;background:color-mix(in srgb,var(--my) 10%,transparent)}.alldone>b{color:var(--my)}.alldone .dn{display:flex;flex-wrap:wrap;gap:6px;align-items:center}.alldone small{color:var(--muted)}
 .links{display:grid;gap:8px}
@@ -1070,14 +1071,15 @@ function sugHTML(){
   if(!out.length) return '';
   return `<div class="sug"><h3>📒 今日のニュースに出てきた言葉</h3>${out.map(({t,s}) => `<div class="sugi"><span><b>${esc(t.term)}</b>${esc(t.def)}<small>${esc(s.emoji||'')} ${esc(s.hook||s.title)}</small></span><button type="button" class="pill" data-sugw="${esc(t.term)}" data-def="${esc(t.def)}" data-story="${esc(s.id)}">＋ 入れる</button></div>`).join('')}</div>`;
 }
-var wedit = -1;
+var wedit = -1, wfind = '';
 function renderWords(){
   { const ym = {}; D.stories.forEach(s => (s.terms||[]).forEach(x => { if(x.yomi) ym[x.term] = x.yomi; })); st.words.forEach(w => { if(!w.yomi && ym[w.term]) w.yomi = ym[w.term]; }); }
   const tabs = [['words',`単語 ${st.words.length}`],['zukan','登場人物・国の図鑑'],['marks',`マーカー・質問 ${st.marks.length}`],['bm',`あとで読む ${st.bookmarks.length}`]];
   $('#wtabs').innerHTML = tabs.map(([k,l]) => `<button class="chip" type="button" data-t="${k}" aria-pressed="${k===wtab}">${l}</button>`).join('');
   let h = '';
   const rev = a => a.map((x,i)=>[x,i]).reverse();
-  if(wtab==='words') h = st.words.length ? `<div class="list">${rev(st.words).map(([w,i])=>`<div class="item"><b>${esc(w.term)}${w.yomi?`<small class="yomi">（${esc(w.yomi)}）</small>`:''}</b>${wedit===i ? `<span class="wed"><textarea id="wed-in" rows="3" aria-label="意味を編集">${esc(w.def||'')}</textarea><span><button class="chip" type="button" data-wsave="${i}">保存</button><button class="chip" type="button" data-wcancel="1">やめる</button></span></span>` : `<span>${esc(w.def)}</span>`}${w.known?'<span class="known">覚えた</span>':''}<small>${esc(w.date||'')}${w.storyTitle?(w.story?`・<button class="gostory" type="button" data-gs="${esc(w.date)}|${esc(w.story)}">${esc(w.storyTitle)} →</button>`:'・'+esc(w.storyTitle)):''}</small>${wedit===i?'':`<button class="rm" type="button" data-wed="${i}">✏️ 自分の言葉で書きかえる</button>`}<button class="rm" type="button" data-rm="words" data-i="${i}">削除</button></div>`).join('')}</div>` : `<p class="empty">記事の中の点線の言葉を押すと、ここにためられます。下の「自分で単語を追加する」からも入れられます。</p>`;
+  const wf = wfind.trim().toLowerCase(), wmatch = w => !wf || [w.term, w.def, w.yomi, w.storyTitle].join(' ').toLowerCase().includes(wf);
+  if(wtab==='words') h = st.words.length ? `${st.words.length >= 8 ? `<input id="wfind" type="search" placeholder="🔍 単語をさがす" value="${esc(wfind)}" aria-label="単語をさがす">` : ''}<div class="list">${rev(st.words).filter(([w]) => wmatch(w)).map(([w,i])=>`<div class="item"><b>${esc(w.term)}${w.yomi?`<small class="yomi">（${esc(w.yomi)}）</small>`:''}</b>${wedit===i ? `<span class="wed"><textarea id="wed-in" rows="3" aria-label="意味を編集">${esc(w.def||'')}</textarea><span><button class="chip" type="button" data-wsave="${i}">保存</button><button class="chip" type="button" data-wcancel="1">やめる</button></span></span>` : `<span>${esc(w.def)}</span>`}${w.known?'<span class="known">覚えた</span>':''}<small>${esc(w.date||'')}${w.storyTitle?(w.story?`・<button class="gostory" type="button" data-gs="${esc(w.date)}|${esc(w.story)}">${esc(w.storyTitle)} →</button>`:'・'+esc(w.storyTitle)):''}</small>${wedit===i?'':`<button class="rm" type="button" data-wed="${i}">✏️ 自分の言葉で書きかえる</button>`}<button class="rm" type="button" data-rm="words" data-i="${i}">削除</button></div>`).join('')}</div>` : `<p class="empty">記事の中の点線の言葉を押すと、ここにためられます。下の「自分で単語を追加する」からも入れられます。</p>`;
   if(wtab==='words') h = sugHTML() + h;
   if(wtab==='words' && st.words.length) h += `<div class="wexp"><button class="chip" type="button" data-wexp="1">📤 単語を書き出す（Anki・表計算用CSV）</button></div>`;
   if(wtab==='marks') h = st.marks.length ? `<div class="list">${rev(st.marks).map(([m,i])=>`<div class="item"><span>${m.memo?'📝 '+esc(m.text):m.qa?esc(m.text):`<mark>${esc(m.text)}</mark>`}</span><small>${esc(m.date||'')}${m.storyTitle?'・'+esc(m.storyTitle):''}</small><button class="rm" type="button" data-rm="marks" data-i="${i}">削除</button></div>`).join('')}</div>` : `<p class="empty">記事の文章を選んで「マーカーで保存」を押すとここにたまります。Claudeへの質問と答えもここに残ります。</p>`;
@@ -1086,6 +1088,7 @@ function renderWords(){
   $('#wbody').innerHTML = h;
 }
 $('#wtabs').addEventListener('click', e => { const b=e.target.closest('button'); if(!b) return; wtab=b.dataset.t; renderWords(); });
+$('#wbody').addEventListener('input', e => { if(e.target.id !== 'wfind') return; wfind = e.target.value; const pos = e.target.selectionStart; renderWords(); const f = $('#wfind'); if(f){ f.focus(); f.setSelectionRange(pos, pos); } });
 $('#wbody').addEventListener('click', e => {
   const sg = e.target.closest('[data-sugw]');
   if(sg){ const s = D.stories.find(x => x.id === sg.dataset.story) || {};
