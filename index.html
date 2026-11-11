@@ -320,7 +320,7 @@ body.noscroll{overflow:hidden}
 @media (prefers-reduced-motion:reduce){.sheet-in.slide-l,.sheet-in.slide-r{animation:none}}
 .more{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:12.5px}
 .more::before,.more::after{content:"";flex:1;border-top:1px dashed var(--line)}
-@media (max-width:560px){.appnav{gap:0;justify-content:space-between}.appnav a{font-size:12px;padding:6px 4px;letter-spacing:-.02em}}
+@media (max-width:560px){.appnav{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;overflow:visible}.appnav a{font-size:12.5px;padding:7px 2px;text-align:center;white-space:nowrap;letter-spacing:-.02em}}
 @media (max-width:560px){.sh-hero{padding:14px 16px 16px;gap:6px}.sh-hero .emo{font-size:38px}.minimap{width:150px}.sh-acts{gap:6px}.sh-acts .pill{font-size:12px;padding:5px 10px}.sh-hero .sub{font-size:13px}}
 .archive .myq{display:inline-block;margin-top:4px;font-size:12px;font-weight:700;color:var(--my)}
 </style>
@@ -1118,6 +1118,245 @@ if(window.NEWSBOOK_SITE){
       route();
     }
   }, () => { clearTimeout(timer); setSync('同期できません。この端末には保存しています'); });
+})();
+</script>
+<!-- そもそも講座モジュール。primers.py が primers.json を埋め込んで primer-module.html を書き出す。直接編集するのはこのファイル。 -->
+<style>
+#v-kiso{--k:var(--world)}
+.k-keizai{--k:var(--my)} .k-shikumi{--k:var(--world)} .k-mondai{--k:var(--jp)}
+.kiso-lede{color:var(--muted);margin:0;font-size:14px}
+.kiso-prog{display:grid;gap:6px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 14px}
+.kiso-prog b{font-family:var(--f-display);font-size:15px}
+.kiso-bar{height:8px;border-radius:99px;background:var(--line);overflow:hidden}.kiso-bar i{display:block;height:100%;background:var(--accent);border-radius:99px}
+.kiso-grp{display:grid;gap:10px}
+.kiso-grp>h3{margin:8px 0 0;font-family:var(--f-display);font-size:18px;display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+.kiso-grp>h3 small{font-family:var(--f-body);font-weight:400;font-size:12.5px;color:var(--muted)}
+.kiso-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px}
+.kcard{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;align-items:center;text-align:left;font:inherit;color:var(--ink);cursor:pointer;
+  background:color-mix(in srgb,var(--k) 8%,var(--surface));border:1px solid color-mix(in srgb,var(--k) 26%,var(--line));border-radius:14px;padding:12px 14px;min-width:0;position:relative}
+.kcard:hover{border-color:var(--k)}
+.kcard .ke{font-size:28px;grid-row:span 2;line-height:1}
+.kcard b{font-family:var(--f-display);font-size:15.5px;line-height:1.35}
+.kcard span{font-size:12.5px;color:var(--muted);line-height:1.45}
+.kcard .kdone{position:absolute;top:8px;right:10px;font-size:11px;font-weight:700;color:var(--k)}
+.kcard .ktoday{position:absolute;top:-8px;right:10px;font-size:10.5px;font-weight:700;background:var(--marker);color:var(--marker-ink);border-radius:99px;padding:1px 8px}
+.kchips{display:flex;flex-wrap:wrap;gap:6px}
+.kchip{display:inline-flex;gap:4px;align-items:center;font:inherit;font-size:13px;font-weight:700;color:var(--ink);text-decoration:none;cursor:pointer;
+  background:color-mix(in srgb,var(--k) 12%,var(--surface));border:1px solid color-mix(in srgb,var(--k) 35%,var(--line));border-radius:99px;padding:4px 12px}
+.kchip:hover{border-color:var(--k)}
+.kiso-links .kchip{--k:var(--accent)}
+.kiso-links>p{margin:0;font-size:12.5px;color:var(--muted)}
+/* 詳細 */
+.kd{display:grid;gap:18px}
+.kback{justify-self:start;font:inherit;font-size:13px;font-weight:700;color:var(--accent);background:none;border:0;padding:4px 0;cursor:pointer}
+.khead{display:grid;gap:4px}
+.khead .ke{font-size:44px;line-height:1}
+.khead h2{font-family:var(--f-display);font-size:24px;line-height:1.3;margin:0}
+.khead p{margin:0;color:var(--muted)}
+.kone{background:color-mix(in srgb,var(--k) 12%,var(--surface));border-left:5px solid var(--k);border-radius:4px 14px 14px 4px;padding:14px 16px;font-size:16px;line-height:1.85}
+.kone b{display:block;font-size:12px;letter-spacing:.1em;color:var(--k);margin-bottom:2px}
+.kwhy{font-size:14px;color:var(--ink);margin:0}.kwhy b{color:var(--k)}
+.kblk{display:grid;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px 16px;min-width:0}
+.kblk>h4{margin:0;font-family:var(--f-display);font-size:15.5px}
+.knote{margin:0;font-size:12.5px;color:var(--muted)}
+.kflow{display:grid;gap:0;justify-items:stretch}
+.kflow div{background:color-mix(in srgb,var(--k) 10%,var(--surface));border:1px solid color-mix(in srgb,var(--k) 30%,var(--line));border-radius:10px;padding:8px 12px;font-size:14px;display:flex;gap:10px;align-items:baseline}
+.kflow div i{font-style:normal;font-family:var(--f-mono);font-size:12px;color:var(--k);font-weight:500}
+.kflow div:last-child{background:var(--k);color:var(--surface);border-color:var(--k);font-weight:700}.kflow div:last-child i{color:inherit}
+.kflow s{text-decoration:none;text-align:center;color:var(--k);font-size:16px;line-height:1.3}
+.kvs{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.kvs>div{border-radius:12px;padding:10px 12px;min-width:0}
+.kvs>div:first-child{background:color-mix(in srgb,var(--my) 12%,var(--surface))}
+.kvs>div:last-child{background:color-mix(in srgb,var(--jp) 12%,var(--surface))}
+.kvs b{font-family:var(--f-display);font-size:14px;display:block;margin-bottom:4px}
+.kvs ul{margin:0;padding-left:1.1em;font-size:13px;line-height:1.6;display:grid;gap:4px}
+.ktl{list-style:none;margin:0;padding:0 0 0 14px;border-left:2px solid color-mix(in srgb,var(--k) 45%,var(--line));display:grid;gap:10px}
+.ktl li{position:relative;font-size:14px;line-height:1.6}
+.ktl li::before{content:"";position:absolute;left:-20px;top:7px;width:10px;height:10px;border-radius:50%;background:var(--k);box-shadow:0 0 0 3px var(--surface)}
+.ktl li b{display:block;font-family:var(--f-mono);font-size:12.5px;color:var(--k)}
+.kcast{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px}
+.kcast div{display:grid;grid-template-columns:auto 1fr;gap:2px 10px;align-items:start;background:color-mix(in srgb,var(--k) 7%,var(--surface));border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+.kcast div>span:first-child{font-size:24px;grid-row:span 2;line-height:1.1}
+.kcast b{font-size:14px}.kcast small{font-size:12.5px;color:var(--muted);line-height:1.55}
+.kbars{display:grid;gap:8px}
+.kbar{display:grid;grid-template-columns:minmax(0,9em) 1fr auto;gap:8px;align-items:center;font-size:13px}
+.kbar>span{line-height:1.35}
+.kbar>div{position:relative;height:22px;background:color-mix(in srgb,var(--line) 50%,transparent);border-radius:6px}
+.kbar>div i{position:absolute;top:0;bottom:0;border-radius:6px;background:var(--k);min-width:3px}
+.kbar>div i.neg{background:var(--jp)}
+.kbar>em{font-style:normal;font-family:var(--f-mono);font-size:12px;font-weight:500;white-space:nowrap;min-width:4.5em;text-align:right}.kbar>em.neg{color:var(--jp)}
+.kbar .zero{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--muted)}
+.kcycle{position:relative;width:min(100%,340px);aspect-ratio:1;margin:0 auto}
+.kcycle svg{position:absolute;inset:0;width:100%;height:100%}
+.kcycle svg circle{fill:none;stroke:color-mix(in srgb,var(--k) 40%,var(--line));stroke-width:2;stroke-dasharray:4 5}
+.kcycle svg path{fill:none;stroke:var(--k);stroke-width:2.5}
+.kcycle svg polygon{fill:var(--k)}
+.kcycle div{position:absolute;transform:translate(-50%,-50%);width:36%;text-align:center;font-size:12px;line-height:1.4;background:var(--surface);border:1.5px solid var(--k);border-radius:10px;padding:5px 6px;font-weight:700}
+.kcycle p{position:absolute;inset:0;margin:auto;height:max-content;text-align:center;font-size:12px;color:var(--muted)}
+.kpts{margin:0;padding-left:1.2em;display:grid;gap:6px;font-size:14px;line-height:1.7}
+.ktalk{display:grid;gap:6px}
+.ktalk div{display:grid;gap:0;padding:8px 12px;border-radius:10px;background:var(--bg)}
+.ktalk b{font-size:14px}.ktalk b::before{content:"📰 "}
+.ktalk span{font-size:13px;color:var(--muted)}
+.kterms{display:grid;gap:6px}
+.kterms div{display:flex;gap:10px;align-items:start;justify-content:space-between;padding:8px 0;border-bottom:1px dashed var(--line)}
+.kterms div:last-child{border-bottom:0}
+.kterms p{margin:0;font-size:13.5px;line-height:1.6}.kterms p b{display:block;font-size:14.5px}
+.kterms button,.kread{flex:none;font:inherit;font-size:12px;font-weight:700;border-radius:99px;padding:4px 10px;cursor:pointer;border:1px solid var(--accent);color:var(--accent);background:var(--surface)}
+.kterms button.on{background:var(--accent);color:var(--surface)}
+.kquiz{display:grid;gap:8px}
+.kquiz p{margin:0;font-weight:700;font-size:15px}
+.kquiz .kc{display:grid;gap:6px}
+.kquiz .kc button{text-align:left;font:inherit;font-size:14px;color:var(--ink);background:var(--bg);border:1.5px solid var(--line);border-radius:10px;padding:8px 12px;cursor:pointer}
+.kquiz .kc button.ok{border-color:var(--my);background:color-mix(in srgb,var(--my) 16%,var(--surface))}
+.kquiz .kc button.ng{border-color:var(--jp);background:color-mix(in srgb,var(--jp) 12%,var(--surface))}
+.kquiz .kans{font-size:13.5px;margin:0;padding:8px 12px;border-radius:10px;background:var(--accent-soft)}
+.kstories{display:grid;gap:6px}
+.kstories a{display:block;color:var(--ink);text-decoration:none;font-size:14px;padding:8px 12px;border-radius:10px;background:var(--bg);border:1px solid var(--line)}
+.kstories a:hover{border-color:var(--accent)}.kstories a::after{content:" →";color:var(--accent)}
+.kfoot{display:flex;gap:8px;justify-content:space-between;flex-wrap:wrap}
+.kread{font-size:14px;padding:8px 16px}.kread.on{background:var(--my);border-color:var(--my);color:var(--surface)}
+@media (max-width:420px){.kvs{grid-template-columns:1fr}.kbar{grid-template-columns:minmax(0,7.5em) 1fr auto}}
+</style>
+<section id="v-kiso" class="view" hidden></section>
+<script id="kiso-data" type="application/json">{"groups": [{"id": "keizai", "title": "経済のきほん", "emoji": "💴", "sub": "お金のニュースの「単語」がわかるようになる"}, {"id": "shikumi", "title": "世界と国のしくみ", "emoji": "🏛", "sub": "政治ニュースの「舞台」がわかるようになる"}, {"id": "mondai", "title": "世界の大問題", "emoji": "🌍", "sub": "毎日のように出てくる対立の「そもそも」"}], "primers": [{"id": "kinri", "group": "keizai", "emoji": "🏦", "title": "金利と中央銀行", "sub": "「利上げ」「利下げ」で何が変わる？", "one": "金利は「お金のレンタル料」。中央銀行（日本は日銀、アメリカはFRB）が、この基準を上げ下げして、景気と物価のブレーキとアクセルを踏んでいます。", "why": "金利は、住宅ローン・預金・株価・為替（円安円高）にまで全部つながる「経済の元栓」だからです。", "blocks": [{"type": "flow", "title": "利上げ ＝ ブレーキ", "steps": ["中央銀行が金利を上げる", "ローンや借金の利息が高くなる", "家・車・工場への出費をひかえる", "モノが売れにくくなる", "物価の上がり方がおだやかに（景気は冷える）"]}, {"type": "flow", "title": "利下げ ＝ アクセル", "steps": ["中央銀行が金利を下げる", "お金を借りやすくなる", "買い物や投資が増える", "景気が温まる（物価は上がりやすい）"]}, {"type": "vs", "title": "利上げで…", "left": ["うれしい人", ["預金がたくさんある人", "円を持っている人（円高になりやすい）"]], "right": ["困る人", ["住宅ローンを借りている人", "借金の多い会社や国", "株を持っている人（株価が下がりやすい）"]]}, {"type": "points", "title": "おさえておきたい今の流れ", "items": ["日本は約30年、ほぼゼロ金利でした。2024年に17年ぶりの利上げをして、少しずつ「金利のある世界」に戻りつつあります。", "アメリカは2022年から急いで利上げしました。物価が高いと、また利上げの話が出ます。", "中央銀行は政府から独立していて、政治家が「下げろ」と言っても自分で判断するのが原則です。"]}], "talk": [["利上げ観測が強まる", "「近いうちに利上げしそう」と市場が予想している"], ["金利を据え置き", "今回は変えなかった"], ["タカ派／ハト派", "物価退治のために利上げに積極的な人／景気を気にして利上げに慎重な人"]], "terms": [["政策金利", "中央銀行が決める、金利の大もとになる数字"], ["日銀（日本銀行）", "日本の中央銀行。お札を発行し、金利を決める"], ["FRB", "アメリカの中央銀行（連邦準備制度理事会）。地方に12の「連銀」がある"]], "quiz": {"q": "中央銀行が利上げをすると、ふつう住宅ローンの利息はどうなる？", "c": ["上がる", "下がる", "変わらない"], "a": 0, "why": "金利は「お金のレンタル料」。大もとが上がれば、ローンのレンタル料も上がります。"}, "match": "金利|利上げ|利下げ|日銀|FRB|中央銀行|連銀|植田総裁|パウエル|長期金利|国債が売られ", "related": ["inflation", "kawase", "kabu"]}, {"id": "inflation", "group": "keizai", "emoji": "🛒", "title": "物価とインフレ", "sub": "値上げが続くと、なぜ困る？", "one": "インフレは「モノの値段が上がり続けること」。言いかえると「お金の価値が下がっていくこと」です。", "why": "物価は暮らしに直結するうえ、中央銀行が金利を動かすいちばんの理由だからです。", "blocks": [{"type": "cycle", "title": "「よいインフレ」の輪", "steps": ["モノが売れる", "会社がもうかる", "給料が上がる", "もっと買い物する", "物価がゆるやかに上がる"]}, {"type": "flow", "title": "「悪いインフレ」の流れ", "steps": ["原油高や円安で、仕入れが高くなる", "会社が値上げする", "でも給料は上がらない", "買えるモノが減る（実質賃金が下がる）"]}, {"type": "bars", "title": "給料と物価の「引き算」がたいせつ", "unit": "%", "items": [["給料の伸び", 3], ["物価の伸び", 5], ["実際の豊かさ（実質）", -2]], "note": "給料が3%増えても、物価が5%上がれば、実際は2%貧しくなっています。"}, {"type": "points", "title": "おぼえておくと便利", "items": ["日銀もFRBも「物価は年2%くらい上がる」のがちょうどよいと考えています（物価目標）。", "日本は長いあいだ、物価が上がらない「デフレ」に悩んでいました。", "物価が上がりすぎると、中央銀行は利上げでブレーキをかけます。→「金利と中央銀行」"]}], "talk": [["消費者物価指数（CPI）", "私たちが買うモノやサービスの値段の平均。物価の体温計"], ["実質賃金", "物価の上がり分を差し引いた、本当の給料の価値"], ["コア指数", "天気で値段が大きく動く生鮮食品などを除いた物価"]], "terms": [["インフレ", "物価が上がり続けること"], ["デフレ", "物価が下がり続けること。景気が悪くなりやすい"], ["物価目標", "中央銀行がめざす物価の上がり方。日米とも年2%"]], "quiz": {"q": "給料が3%上がり、物価が5%上がりました。暮らしはどうなった？", "c": ["楽になった", "苦しくなった", "変わらない"], "a": 1, "why": "3−5＝−2%。実際に買えるモノは減っています（実質賃金のマイナス）。"}, "match": "物価|インフレ|デフレ|CPI|値上げ|実質賃金|生活費", "related": ["kinri", "kawase", "energy"]}, {"id": "kawase", "group": "keizai", "emoji": "💱", "title": "為替（円安・円高）", "sub": "1ドル150円は「安い」の？", "one": "為替は、お金どうしの交換レート。1ドル＝140円が160円になると「円安」。円の値打ちが下がって、同じ1ドルを手に入れるのに円がたくさん要るようになった、という意味です。", "why": "円安・円高は、輸入品の値段、旅行、会社のもうけ、株価を一度に動かすからです。", "blocks": [{"type": "bars", "title": "1ドルを買うのに必要な円", "unit": "円", "items": [["円高のとき", 110], ["円安のとき", 160]], "note": "数字が大きいほど「円安」。数字と言葉がさかさまなのが、ややこしいポイントです。"}, {"type": "vs", "title": "円安になると…", "left": ["うれしい", ["車などを輸出する会社（海外で稼いだドルが、円にすると増える）", "日本に来る外国人観光客", "ドルなど外貨を持っている人"]], "right": ["困る", ["食べ物やエネルギーを輸入する人（値上げにつながる）", "海外旅行に行く日本人", "海外から部品を買う会社"]]}, {"type": "flow", "title": "ここ数年、円安になりやすかった理由", "steps": ["アメリカの金利が高い、日本はほぼゼロ", "お金は利息の高いドルへ集まる", "円を売ってドルを買う人が増える", "円安が進む"]}, {"type": "points", "title": "マレーシアで暮らす目線では", "items": ["円安・リンギット高だと、日本への旅行や日本製品が割安に感じます。", "急に円安が進むと、日本の財務省が円を買って支える「為替介入」をすることがあります。"]}], "talk": [["円安が進む", "円の値打ちが下がっている"], ["金利差", "国どうしの金利の差。為替を動かす一番の理由"], ["為替介入", "政府が自らお金を売り買いして、急な値動きをおさえること"]], "terms": [["為替レート", "ある国のお金と別の国のお金の交換比率"], ["リンギット", "マレーシアのお金の単位（RM）"], ["為替介入", "政府・中央銀行が市場でお金を売買すること"]], "quiz": {"q": "1ドル＝140円が155円になりました。これは？", "c": ["円高", "円安", "どちらでもない"], "a": 1, "why": "1ドルを手に入れるのに、より多くの円が必要になった＝円の値打ちが下がった＝円安です。"}, "match": "円安|円高|為替|ドル高|ドル安|リンギ|ringgit|ドル円", "related": ["kinri", "inflation", "kabu"]}, {"id": "kabu", "group": "keizai", "emoji": "📈", "title": "株と株価指数", "sub": "「日経平均が下がった」って何のこと？", "one": "株は「会社の持ち分のチケット」。その会社がこれからもうかりそうだと思う人が多いほど、値段が上がります。株価指数は、たくさんの会社の株価をまとめた「クラスの平均点」です。", "why": "株価は「みんなが未来をどう見ているか」の温度計。ニュースで景気や政治の評価として毎日使われます。", "blocks": [{"type": "cycle", "title": "株のしくみ", "steps": ["会社が株を売ってお金を集める", "そのお金で事業をする", "利益が出る", "株主に配当、株価も上がる", "人気が出て、さらにお金が集まる"]}, {"type": "cast", "title": "よく聞く「平均点」", "items": [["🇯🇵", "日経平均", "日本を代表する225社"], ["🇯🇵", "TOPIX", "東証プライムのほぼ全社"], ["🇺🇸", "ダウ平均", "アメリカの代表30社"], ["🇺🇸", "S&P500", "アメリカの大企業500社"], ["🇺🇸", "ナスダック", "IT・ハイテク企業が多い"], ["🇲🇾", "KLCI", "マレーシアの代表30社"]]}, {"type": "points", "title": "株価を動かすもの", "items": ["「今」より「これから」。今いくらもうかっているかより、将来への期待で動きます。", "金利が上がると株は下がりやすい（預金や国債でも稼げるようになり、会社の借金も重くなるため）。", "ここ数年はAI関連の会社の株が大きく上がり、「バブルでは？」という議論も続いています。→「AIブーム」"]}], "talk": [["最高値を更新", "これまでで一番高い値段になった"], ["利益確定の売り", "上がったところで売って、もうけを確保する動き"], ["バブル", "実力以上に期待だけで値段がふくらんだ状態"]], "terms": [["株主", "株を持っている人。会社の持ち主の一人"], ["配当", "会社が利益の一部を株主に分けるお金"], ["上場", "誰でも株を売り買いできるよう、取引所に登録すること"]], "quiz": {"q": "株価がいちばん映しているのはどれ？", "c": ["会社の去年の利益", "これからへの期待", "社員の数"], "a": 1, "why": "株価は「未来の天気予報」のようなもの。期待が変わると、今の業績が同じでも動きます。"}, "match": "株価|株式|日経平均|ダウ|ナスダック|S&P|上場|投資家|バブル|時価総額|TOPIX", "related": ["kinri", "ai", "gdp"]}, {"id": "gdp", "group": "keizai", "emoji": "🏭", "title": "GDPと景気", "sub": "「国の稼ぎ」はどうやって測る？", "one": "GDPは、国の中で1年間に新しく生み出されたモノやサービスの合計。ざっくり言えば「国の稼ぎ」です。", "why": "GDPが増えているか減っているか（成長率）で、景気がよいか悪いかを判断するからです。", "blocks": [{"type": "bars", "title": "世界のGDPランキング（2025年ごろ、IMF推計）", "unit": "兆ドル", "items": [["アメリカ", 30.5], ["中国", 19.2], ["ドイツ", 4.7], ["インド", 4.2], ["日本", 4.2], ["マレーシア", 0.45]], "note": "日本は長く世界2位でしたが、中国に抜かれ、その後ドイツやインドにも並ばれました。円安でドル換算が目減りしたことも理由です。"}, {"type": "cycle", "title": "景気の波", "steps": ["好景気（よく売れる）", "過熱（物価が上がる）", "利上げでブレーキ", "不景気（売れない）", "利下げでアクセル", "回復"]}, {"type": "points", "title": "よく出る言い方", "items": ["「成長率2%」＝前の年より2%稼ぎが増えた。", "2期（半年）続けてマイナス成長だと「景気後退（リセッション）」の目安とされます。", "GDPは国全体の大きさ。一人あたりで割ると、暮らしの豊かさに近くなります。"]}], "talk": [["実質成長率", "物価の上がり分を除いた、本当の伸び"], ["景気後退（リセッション）", "景気が縮んでいる状態"], ["四半期", "1年を4つに分けた3か月ずつの期間"]], "terms": [["GDP（国内総生産）", "国内で生まれたモノ・サービスの合計"], ["成長率", "GDPが前の時期よりどれだけ増えたか"], ["一人あたりGDP", "GDPを人口で割ったもの"]], "quiz": {"q": "いま世界でGDPが1位の国は？", "c": ["中国", "アメリカ", "日本"], "a": 1, "why": "アメリカが約30兆ドルで1位、中国が2位です。日本はドイツ・インドと4〜5位あたりを争っています。"}, "match": "GDP|国内総生産|景気|成長率|リセッション|景気後退|経済成長", "related": ["kinri", "inflation", "zaisei"]}, {"id": "zaisei", "group": "keizai", "emoji": "🧾", "title": "税金と国の借金", "sub": "「減税」の何がそんなにもめるの？", "one": "国のお財布は、税金で集めたお金を、社会保障・教育・防衛などに使うしくみ。足りない分は「国債」という借金でまかなっています。", "why": "減税・給付・増税のニュースは、結局「誰が払って、誰が受け取るか」の綱引きだからです。", "blocks": [{"type": "bars", "title": "日本の国の予算の使い道（2025年度・一般会計 約115兆円）", "unit": "兆円", "items": [["社会保障（年金・医療・介護）", 38.3], ["借金の返済と利息", 28.2], ["地方への配分", 19.0], ["防衛", 8.7], ["道路などの公共事業", 6.1], ["教育・科学", 5.5]], "note": "収入のうち税金は約78兆円。残りの約3割は新しい借金（国債）です。"}, {"type": "vs", "title": "消費税を減税すると…", "left": ["よいところ", ["毎日の買い物が安くなる", "すぐに全員に効く"]], "right": ["心配なところ", ["社会保障のお金が足りなくなる", "借金が増え、国の信用や円の値打ちに響くかも", "一度下げると戻しにくい"]]}, {"type": "points", "title": "おさえておきたい数字", "items": ["消費税は10%（食べ物などは8%）。年金・医療・介護などの財源に使われます。", "日本の借金はGDPの2倍以上で、先進国でいちばん重いレベル。", "金利が上がると借金の利息も増えます。→「金利と中央銀行」"]}], "talk": [["財源", "その政策に使うお金をどこから持ってくるか"], ["国債", "国の借金の証書。買った人に利息がつく"], ["給付", "国が現金などを配ること"]], "terms": [["一般会計", "国の基本的なお財布"], ["社会保障", "年金・医療・介護・子育てなどの支え"], ["財政赤字", "収入より支出が多い状態"]], "quiz": {"q": "日本の国の予算で、いちばん大きい使い道は？", "c": ["防衛", "社会保障", "公共事業"], "a": 1, "why": "高齢化で年金・医療・介護のお金が増え、予算の約3分の1を占めています。"}, "match": "減税|増税|消費税|予算|国債|財政|社会保障|給付|税収|財源", "related": ["jpseiji", "kinri", "gdp"]}, {"id": "energy", "group": "keizai", "emoji": "🛢", "title": "原油とエネルギー", "sub": "中東がもめると、なぜガソリンが上がる？", "one": "原油は「経済の血液」。ガソリンだけでなく、電気、プラスチック、運送代など、ほとんどすべての値段につながっています。", "why": "戦争や外交のニュースが、物価や株価のニュースに変わる「つなぎ目」だからです。", "blocks": [{"type": "flow", "title": "中東の緊張が家計に届くまで", "steps": ["中東で緊張が高まる", "タンカーの通り道（ホルムズ海峡）が心配に", "原油の値段が上がる", "ガソリン・電気代・運送代が上がる", "いろいろなモノが値上げ"]}, {"type": "cast", "title": "主な登場人物", "items": [["🛢", "OPECプラス", "サウジやロシアなどの産油国グループ。生産量を調整して値段を支える"], ["🇺🇸", "アメリカ", "実は世界最大の産油国（シェールオイル）"], ["🇯🇵", "日本", "原油の9割以上を中東から輸入。値上がりに弱い"], ["🇲🇾", "マレーシア", "産油国。国営企業ペトロナスが国の財政を支える"]]}, {"type": "points", "title": "ホルムズ海峡とは", "items": ["イランとアラビア半島のあいだの細い海の道。", "世界で海を運ばれる原油の約2割が通ります。ここが止まると世界中が困るので、イランのニュースで必ず出てきます。→「イランと中東」"]}], "talk": [["1バレル90ドル", "原油の値段。1バレルは約159リットル"], ["減産", "産油国が生産量を減らすこと（値段は上がりやすい）"], ["LNG", "液化天然ガス。発電によく使う"]], "terms": [["OPEC", "石油輸出国機構。産油国の集まり"], ["ホルムズ海峡", "ペルシャ湾の出口にある、原油輸送の要所"], ["エネルギー安全保障", "エネルギーを途切れずに手に入れられるようにすること"]], "quiz": {"q": "原油の値段が上がると、まず値上がりしやすいのは？", "c": ["ガソリンや電気代", "スマホのアプリ", "家賃"], "a": 0, "why": "原油は燃料や発電に直接使われるので、すぐに響きます。そのあと運送代などを通じて他のモノにも広がります。"}, "match": "原油|石油|OPEC|ガソリン|LNG|天然ガス|ホルムズ|電気代|ペトロナス|エネルギー", "related": ["iran", "inflation", "climate"]}, {"id": "kokusai", "group": "shikumi", "emoji": "🌐", "title": "国連・G7・NATO", "sub": "世界の「集まり」早わかり", "one": "世界には、国どうしがルールを決めたり、守り合ったりするための「集まり」がいくつもあります。どれに入っているかで、その国の立ち位置がわかります。", "why": "「安保理」「G7サミット」「NATO」などは、戦争や経済のニュースに毎日のように出てくる舞台だからです。", "blocks": [{"type": "cast", "title": "主な集まり", "items": [["🇺🇳", "国連", "ほぼ全世界の193か国。話し合いの場"], ["⚖️", "安全保障理事会", "戦争などを話し合う国連の中心。米英仏中ロの5か国は「拒否権」を持つ"], ["🏔", "G7", "日米英仏独伊加の先進7か国＋EU"], ["🌏", "G20", "G7に中国・インド・ブラジルなど新興国を加えた20の国・地域"], ["🛡", "NATO", "北米とヨーロッパの軍事同盟。32か国。「1か国への攻撃は全体への攻撃」"], ["🇪🇺", "EU", "ヨーロッパ27か国。お金（ユーロ）や国境の行き来をまとめている"], ["🤝", "ASEAN", "マレーシアを含む東南アジアの国々の集まり"], ["🧱", "BRICS", "ブラジル・ロシア・インド・中国・南アなど新興国のグループ。仲間が増えている"]]}, {"type": "flow", "title": "安保理が戦争を止めにくい理由", "steps": ["戦争を止める決議を出す", "常任理事国の1か国でも反対（拒否権）", "決議は成立しない", "大国が当事者の戦争ほど止まらない"]}], "talk": [["拒否権を行使", "常任理事国が反対して、決議を通さなかった"], ["首脳会議（サミット）", "国のトップが集まる会議"], ["加盟", "集まりのメンバーになること"]], "terms": [["常任理事国", "安保理のいつものメンバー5か国（米英仏中ロ）"], ["集団防衛", "仲間が攻撃されたら一緒に守るという約束（NATO第5条）"], ["ASEAN", "東南アジア諸国連合"]], "quiz": {"q": "国連の安保理で「拒否権」を持っていない国は？", "c": ["中国", "日本", "フランス"], "a": 1, "why": "拒否権は第二次世界大戦の戦勝国である米英仏中ロの5か国だけ。日本は常任理事国ではありません。"}, "match": "国連|安保理|G7|G20|NATO|北大西洋|EU|欧州連合|ASEAN|BRICS|サミット", "related": ["ukraine", "uschina", "climate"]}, {"id": "jpseiji", "group": "shikumi", "emoji": "🗾", "title": "日本の政治のしくみ", "sub": "「解散」「少数与党」がわかる", "one": "日本は、選挙で選んだ国会議員が首相を選ぶ「議院内閣制」。国会は衆議院と参議院の2つで、衆議院のほうが強い力を持っています。", "why": "「解散」「総裁選」「法案が否決」など、日本の政治ニュースはこのしくみを知るとぐっと読みやすくなります。", "blocks": [{"type": "flow", "title": "首相が決まるまで", "steps": ["選挙で国会議員を選ぶ", "国会（衆議院・参議院）", "国会が首相を選ぶ", "首相が大臣を選んで内閣をつくる"]}, {"type": "vs", "title": "衆議院と参議院", "left": ["衆議院（465人）", ["任期4年。でも途中で「解散」がある", "首相を選ぶ、予算を決めるときに優先される", "「解散」は首相が決められる"]], "right": ["参議院（248人）", ["任期6年。解散はない", "3年ごとに半分ずつ選挙", "じっくり見直す役。ここで否決されると法案は通りにくい"]]}, {"type": "points", "title": "よく出てくる言葉", "items": ["与党＝政権をになう党。野党＝それ以外の党。", "少数与党＝与党が過半数を持っていない状態。法案を通すには野党の協力が必要になり、党内の反対でも法案が止まりやすくなります。", "自民党の総裁選＝自民党のトップ選び。自民党が与党なら、事実上の首相選びになります。"]}], "talk": [["解散総選挙", "衆議院議員を全員いったん辞めさせ、選挙をやり直すこと"], ["過半数", "半分より多い数。多数決で勝てるライン"], ["連立", "複数の党が組んで政権をつくること"]], "terms": [["議院内閣制", "国会の多数派が内閣をつくるしくみ"], ["与党・野党", "政権側の党と、それ以外の党"], ["党議拘束", "党の決めた方針どおりに投票するルール"]], "quiz": {"q": "首相が「解散」できるのはどちら？", "c": ["衆議院だけ", "参議院だけ", "両方"], "a": 0, "why": "参議院には解散がありません。だから衆議院が「選挙をやり直せる議会」になっています。"}, "regions": ["日本"], "match": "衆院|参院|衆議院|参議院|国会|首相|内閣|自民党|解散|総裁選|与党|野党|連立|高市", "related": ["zaisei", "usseiji", "taiwan"]}, {"id": "usseiji", "group": "shikumi", "emoji": "🇺🇸", "title": "アメリカの政治のしくみ", "sub": "大統領・議会・「ねじれ」", "one": "アメリカは国民が大統領を選ぶ「大統領制」。大統領はとても強いけれど、法律とお金を決めるのは議会（下院・上院）なので、議会の多数派がどの党かで政治の進み方が大きく変わります。", "why": "アメリカの決定は、関税・戦争・株価を通じて世界中に、もちろん日本やマレーシアにも響くからです。", "blocks": [{"type": "vs", "title": "2つの大きな党", "left": ["共和党（赤）", ["小さな政府・減税", "軍や国境の守りを重視", "地方・宗教を大切にする人が多い", "トランプ大統領の党"]], "right": ["民主党（青）", ["医療や福祉に国のお金を使う", "気候変動対策・多様性を重視", "都市部・若い人が多い"]]}, {"type": "cast", "title": "登場人物", "items": [["🏛", "大統領", "任期4年、2期まで。軍のトップで、外交を決める"], ["🔵", "下院（435人）", "2年ごとに全員選挙。人口の多い州ほど議員が多い。議長は強い力を持つ"], ["🔴", "上院（100人）", "各州2人ずつ、任期6年。条約や大臣の人事を承認する"], ["⚖️", "最高裁判所", "9人の判事。法律が憲法に合うかを判断"]]}, {"type": "points", "title": "ニュースの読みどころ", "items": ["中間選挙＝大統領の任期4年の真ん中にある議会選挙。大統領への「中間テスト」と言われます。", "大統領の党と議会の多数派が違う「ねじれ」になると、法律や予算が通りにくくなります。", "弾劾＝下院が大統領や高官を訴え、上院が裁判をして、3分の2の賛成で辞めさせる手続き。"]}], "talk": [["中間選挙", "大統領選の2年後にある議会選挙"], ["議長", "下院のトップ。何をいつ審議するかを決める"], ["弾劾", "高官を議会が訴えて辞めさせる手続き"]], "terms": [["大統領制", "国民が行政のトップを直接選ぶしくみ"], ["ねじれ", "大統領と議会多数派の党が違う状態"], ["州", "アメリカを構成する50の地域。それぞれ独自の法律を持つ"]], "quiz": {"q": "弾劾で、実際に辞めさせるかどうかを決めるのは？", "c": ["下院", "上院", "最高裁"], "a": 1, "why": "下院が「訴える」役、上院が「裁く」役です。辞めさせるには上院の3分の2が必要です。"}, "match": "トランプ|ホワイトハウス|米下院|米上院|下院|上院|共和党|民主党|中間選挙|弾劾|米議会|米大統領", "related": ["uschina", "kokusai", "jpseiji"]}, {"id": "malaysia", "group": "shikumi", "emoji": "🇲🇾", "title": "マレーシアの政治のしくみ", "sub": "国王・州・連立がわかる", "one": "マレーシアは、国王がいる「立憲君主制」で、選挙で選ばれた首相が政治を動かします。13の州と3つの連邦直轄区からなる連邦国家で、マレー系・華人・インド系などが暮らす多民族の国です。", "why": "マレーシアの政治は「民族」と「連立」で読むとわかりやすく、ナジブ元首相やムラカ州選挙などのニュースの背景になっているからです。", "blocks": [{"type": "bars", "title": "国民の民族構成（ざっくり）", "unit": "%", "items": [["マレー系など（ブミプトラ）", 70], ["華人系", 22], ["インド系", 7]], "note": "ブミプトラは「土地の子」という意味で、マレー系とサバ・サラワクなどの先住民を含みます。"}, {"type": "timeline", "title": "ざっくり年表", "items": [["1957", "マラヤ連邦としてイギリスから独立"], ["1963", "サバ・サラワク・シンガポールと合わさりマレーシアに"], ["1965", "シンガポールが分かれて独立"], ["1981〜2003", "マハティール首相の長期政権。工業化が進む"], ["2015", "政府系ファンド「1MDB」の巨額資金流用疑惑が発覚"], ["2018", "独立以来初めての政権交代。BNが敗れる"], ["2022", "総選挙で過半数をとる党がなく、アンワル首相の「統一政府」が発足"]]}, {"type": "cast", "title": "主な政党グループ", "items": [["🤝", "PH（希望連盟）", "アンワル首相のPKR、華人の支持が厚いDAPなど。改革派"], ["⚖️", "BN（国民戦線）", "UMNOが中心。独立から60年以上政権を握った。今は連立のパートナー"], ["🌙", "PN（国民同盟）", "イスラム政党PASなど。今の野党の中心"], ["🌴", "GPS など", "サラワク・サバの地域政党。連立のカギを握る"]]}, {"type": "points", "title": "ナジブ問題がもめる理由", "items": ["ナジブ元首相は1MDB関連の汚職で有罪になり服役していました。", "「汚職と戦う」を掲げてきたDAPなどと、ナジブ氏を支持するUMNOが同じ連立にいるため、その扱いが連立のゆさぶりになります。", "国王は9つの州のスルタン（君主）が5年ごとに交代で務めます。恩赦などにも関わります。"]}], "talk": [["統一政府", "アンワル政権の呼び名。ライバルだった党どうしが組んでいる"], ["州選挙", "州議会の選挙。国の政治の人気を測るものさしにも"], ["ブミプトラ政策", "マレー系などを優遇する経済政策"]], "terms": [["アゴン", "マレーシア国王の呼び名"], ["UMNO", "統一マレー国民組織。長く政権を担った党"], ["1MDB", "政府系投資ファンド。巨額の不正が世界的なスキャンダルに"]], "quiz": {"q": "マレーシアの国王はどうやって決まる？", "c": ["選挙で選ぶ", "9州のスルタンが交代で務める", "同じ王家が代々受け継ぐ"], "a": 1, "why": "世界でもめずらしい「輪番制」の国王です。"}, "regions": ["マレーシア"], "match": "マレーシア|アンワル|ナジブ|UMNO|DAP|PKR|PAS|サラワク|サバ州|ムラカ|ジョホール|リンギ|1MDB|クアラルンプール|ザヒド", "related": ["uschina", "ai", "taiwan"]}, {"id": "ukraine", "group": "mondai", "emoji": "🇺🇦", "title": "ロシアとウクライナ", "sub": "なぜ戦争が終わらないの？", "one": "2022年2月、ロシアが隣の国ウクライナに全面的に攻め込みました。第二次世界大戦のあと、ヨーロッパで最大の戦争です。", "why": "エネルギーや小麦の値段、ヨーロッパの安全、アメリカと各国の関係まで、世界中に影響しているからです。", "blocks": [{"type": "timeline", "title": "ざっくり年表", "items": [["1991", "ソ連がなくなり、ウクライナが独立"], ["2014", "ロシアがクリミア半島を一方的に自分の領土に。東部でも戦闘が始まる"], ["2022年2月", "ロシアが全面侵攻。首都キーウの攻略には失敗"], ["2022年9月", "ロシアが東部・南部の4州を「併合」すると宣言"], ["2023〜24", "前線はあまり動かず、消耗戦に"], ["2025〜", "アメリカの仲介で、停戦・和平の話し合いが続く"]]}, {"type": "cast", "title": "それぞれの言い分", "items": [["🇷🇺", "ロシア", "NATOが東に広がるのは脅威。占領した土地は手放したくない"], ["🇺🇦", "ウクライナ", "国の土地は譲れない。また攻められないよう「安全の保証」がほしい"], ["🇺🇸", "アメリカ", "早く終わらせたい。支援の負担も減らしたい"], ["🇪🇺", "ヨーロッパ", "ロシアに得をさせると、次は自分たちが狙われるかもと心配"]]}, {"type": "points", "title": "話し合いのむずかしいところ", "items": ["土地：ロシアはウクライナの約2割を占領しています。そこをどうするか。", "安全の保証：停戦しても、また攻められない仕組みをどう作るか（NATO加盟など）。", "制裁：ロシアにかけている経済制裁をいつ、どこまで解くか。"]}], "talk": [["停戦", "戦闘をいったん止めること（問題の解決とは別）"], ["和平協議", "戦争を終わらせる話し合い"], ["経済制裁", "貿易などを止めて相手に圧力をかけること"]], "terms": [["NATO", "北米とヨーロッパの軍事同盟"], ["クリミア", "2014年にロシアが併合した半島"], ["ゼレンスキー", "ウクライナの大統領"]], "quiz": {"q": "2014年にロシアが一方的に自分の領土にした場所は？", "c": ["クリミア半島", "キーウ", "ベラルーシ"], "a": 0, "why": "この2014年の出来事が、2022年の全面侵攻へとつながっていきました。"}, "match": "ウクライナ|プーチン|ゼレンスキー|クリミア|キーウ|ロシア軍|対ロ|ロシアのスパイ|和平協議", "related": ["kokusai", "energy", "usseiji"]}, {"id": "israel", "group": "mondai", "emoji": "🕊", "title": "イスラエルとパレスチナ", "sub": "100年続く「同じ土地」の争い", "one": "同じ土地を「自分たちのふるさと」と考える2つの民族、ユダヤ人とパレスチナ人の争いです。宗教・歴史・安全がからみ合い、100年近く続いています。", "why": "ガザの戦争、中東全体の緊張、アメリカの外交、原油の値段にまでつながる、世界の大きな火種だからです。", "blocks": [{"type": "timeline", "title": "ざっくり年表", "items": [["1920年代〜", "イギリスが治めていた土地に、迫害を逃れたユダヤ人の移住が増える"], ["1948", "イスラエル建国。周りのアラブ諸国と戦争に。約70万人のパレスチナ人が故郷を追われる（ナクバ＝大災厄）"], ["1967", "イスラエルがヨルダン川西岸・ガザ・東エルサレムを占領"], ["1993", "オスロ合意。2つの国が共に暮らす道をめざすが、のちに行きづまる"], ["2007", "イスラム組織ハマスがガザを支配。イスラエルがガザを封鎖"], ["2023年10月", "ハマスがイスラエルを襲い約1200人が死亡、約250人が人質に。イスラエルがガザに大規模な攻撃を始める"], ["2025年10月", "アメリカの仲介で停戦。人質の解放が進む"]]}, {"type": "cast", "title": "主な登場人物", "items": [["🇮🇱", "イスラエル", "ユダヤ人の国。自分たちの安全を最優先にしたい"], ["🇵🇸", "パレスチナ自治政府", "ヨルダン川西岸の一部を治める。独立した国をめざす"], ["⚔️", "ハマス", "ガザを支配してきた武装組織。イスラエルの存在を認めてこなかった"], ["🇺🇸", "アメリカ", "イスラエルの最大の味方。仲介役も"], ["🇮🇷", "イラン", "ハマスやレバノンのヒズボラを支援。→「イランと中東」"]]}, {"type": "vs", "title": "見方が分かれるところ", "left": ["イスラエル側から見ると", ["周りから何度も攻撃されてきた", "テロから国民を守る権利がある", "エルサレムはユダヤ人の心のふるさと"]], "right": ["パレスチナ側から見ると", ["故郷を追われ、占領が続いている", "ガザで多くの市民が犠牲になった", "西岸ではイスラエルの入植地が広がっている"]]}], "talk": [["2国家解決", "イスラエルとパレスチナの2つの国が並んで暮らすという解決案"], ["入植地", "占領地にイスラエルがつくった住宅地。国際法違反との批判が強い"], ["人道危機", "食料・水・医療が足りず、多くの人の命が危ない状態"]], "terms": [["ガザ地区", "地中海沿いの細長い地域。約200万人が暮らす"], ["ヨルダン川西岸", "パレスチナ自治政府が一部を治める地域"], ["エルサレム", "ユダヤ教・キリスト教・イスラム教の聖地"]], "quiz": {"q": "「2国家解決」とは？", "c": ["どちらか一方の国にまとめる", "イスラエルとパレスチナの2つの国が並んで暮らす", "国連が土地を治める"], "a": 1, "why": "国際社会の多くが支持してきた解決案ですが、国境やエルサレムの扱いでまとまっていません。"}, "match": "イスラエル|パレスチナ|ガザ|ハマス|ネタニヤフ|ヨルダン川西岸|ヒズボラ|エルサレム|レバノン|アイゼンコット", "related": ["iran", "kokusai", "energy"]}, {"id": "iran", "group": "mondai", "emoji": "🕌", "title": "イランと中東の対立", "sub": "中東のニュースを読む「地図」", "one": "中東は、ざっくり言うと「イスラエル・アメリカ・湾岸の王国」と「イランとその仲間たち」の綱引きが軸。世界の石油の通り道なので、世界中がその動きを見ています。", "why": "中東の緊張は、原油の値段を通じて私たちの電気代やガソリン代に直接響くからです。", "blocks": [{"type": "vs", "title": "ざっくり2つのグループ", "left": ["イランと「抵抗の枢軸」", ["イラン（イスラム教シーア派の大国）", "ヒズボラ（レバノン）", "フーシ派（イエメン）", "ハマス（ガザ）"]], "right": ["イランと対立する側", ["イスラエル", "アメリカ", "サウジアラビアなど湾岸の国々（スンニ派が多い）", "※サウジとイランは2023年に国交を回復"]]}, {"type": "timeline", "title": "ざっくり年表", "items": [["1979", "イラン革命。親米の王様が倒れ、イスラム法学者が治める国に。アメリカとの対立が始まる"], ["2015", "核開発を制限するかわりに制裁を解く「核合意」"], ["2018", "アメリカ（トランプ政権1期目）が核合意を離脱し、制裁を再開"], ["2024", "イランとイスラエルが、初めて直接ミサイルを撃ち合う"], ["2025年6月", "イスラエルとアメリカがイランの核施設を攻撃。その後も緊張が続く"]]}, {"type": "flow", "title": "なぜ核が問題なのか", "steps": ["イランがウランの濃縮を進める", "「核兵器をつくれる」段階に近づく", "イスラエル・アメリカが強く警戒", "攻撃や制裁、そして交渉へ"]}], "talk": [["シーア派・スンニ派", "イスラム教の2つの大きな宗派。イランはシーア派、サウジはスンニ派が中心"], ["核合意", "核開発の制限と制裁解除の取引"], ["仲介", "対立する国の間に入って話をまとめること（カタールなど）"]], "terms": [["ウラン濃縮", "原発の燃料にも核兵器にもなるウランの純度を上げること"], ["革命防衛隊", "イランの体制を守る精鋭部隊"], ["ホルムズ海峡", "原油輸送の大動脈。→「原油とエネルギー」"]], "quiz": {"q": "イランのすぐそばにある、世界の原油の大きな通り道は？", "c": ["スエズ運河", "ホルムズ海峡", "マラッカ海峡"], "a": 1, "why": "ペルシャ湾の出口です。ちなみにマラッカ海峡はマレーシアの横を通る、アジア向けの大事な道です。"}, "match": "イラン|サウジ|ホルムズ|フーシ|イエメン|シリア|イラク|カタール|湾岸|中東", "related": ["israel", "energy", "usseiji"]}, {"id": "uschina", "group": "mondai", "emoji": "⚔️", "title": "アメリカと中国", "sub": "世界1位と2位の「主導権争い」", "one": "世界1位の経済大国アメリカと、2位の中国が、「これからの世界のルールを誰が決めるか」を争っています。リングは、貿易・ハイテク・軍事・価値観の4つです。", "why": "関税や輸出規制のニュースは、日本やマレーシアの工場・仕事・物価に直接つながるからです。", "blocks": [{"type": "cast", "title": "4つのリング", "items": [["📦", "貿易", "お互いの商品に関税をかけ合う"], ["💻", "ハイテク", "アメリカは最先端の半導体を中国に売らない。中国はレアアースの輸出をしぼって対抗"], ["🚢", "軍事", "南シナ海や台湾のまわりでのにらみ合い →「台湾と東アジア」"], ["🗽", "価値観", "民主主義と人権か、一党体制での安定か"]]}, {"type": "timeline", "title": "ざっくり年表", "items": [["2001", "中国がWTOに加盟し「世界の工場」に"], ["2010", "中国のGDPが日本を抜いて世界2位に"], ["2018", "トランプ政権1期目が中国製品に関税。貿易戦争が始まる"], ["2022", "アメリカが先端半導体の対中輸出を規制"], ["2025", "トランプ政権2期目で関税を大きく引き上げ、中国も対抗。その後、休戦と交渉を行き来"]]}, {"type": "points", "title": "私たちとの関係", "items": ["日本にとって、アメリカは同盟国、中国は最大級の貿易相手。どちらとも切れない「板ばさみ」です。", "マレーシアは半導体の組み立て・検査の大きな拠点。米中の対立で、中国から工場を移す先として注目されています。"]}], "talk": [["関税", "輸入品にかける税金。かけた国の消費者が払うことが多い"], ["輸出規制", "大事な技術や製品を特定の国に売らないこと"], ["デカップリング", "経済のつながりを切り離すこと"]], "terms": [["レアアース", "スマホや電気自動車のモーターに欠かせない資源。中国が生産の大半を握る"], ["半導体", "あらゆる電子機器の頭脳になる部品"], ["WTO", "世界貿易機関。貿易のルールを決める"]], "quiz": {"q": "中国がアメリカへの対抗カードとして輸出をしぼった資源は？", "c": ["レアアース", "小麦", "石炭"], "a": 0, "why": "中国はレアアースの生産・加工の大半を握っているので、強いカードになります。"}, "match": "米中|中国|習近平|関税|レアアース|輸出規制|貿易戦争|北京", "related": ["taiwan", "ai", "kokusai"]}, {"id": "taiwan", "group": "mondai", "emoji": "🌏", "title": "台湾と東アジアの安全", "sub": "日本のすぐそばにある「火種」", "one": "日本のまわりには、台湾海峡・朝鮮半島・南シナ海という3つの「火種」があります。どれも日本の安全と経済に直結しています。", "why": "防衛費、日中関係、半導体のニュースの多くが、ここにつながっているからです。", "blocks": [{"type": "cast", "title": "3つの火種", "items": [["🇹🇼", "台湾海峡", "中国は「台湾は中国の一部」として統一をめざし、武力も否定していない。台湾は自分たちで選挙をする民主主義の社会"], ["🇰🇵", "朝鮮半島", "北朝鮮が核兵器とミサイルの開発を続ける。ロシアに兵を送り、つながりを深めている"], ["🌊", "南シナ海", "中国が広い海を自分のものと主張。フィリピン・ベトナム・マレーシアなどと対立"]]}, {"type": "timeline", "title": "台湾問題のはじまり", "items": [["1949", "中国の内戦で負けた国民党が台湾へ。中国本土には共産党の国（中華人民共和国）ができる"], ["1972", "日本が中国と国交を結び、台湾とは正式な国交がなくなる（交流は続く）"], ["1996", "台湾で初めて、国民が直接総統を選ぶ"], ["2025年11月", "高市首相の台湾をめぐる国会答弁に中国が強く反発し、日中関係が冷え込む"]]}, {"type": "points", "title": "なぜ世界が台湾を気にする？", "items": ["最先端の半導体の大部分を台湾（TSMCなど）が作っています。止まるとスマホも車も作れません。", "台湾から日本の与那国島までは約110km。台湾で何かあれば、日本も無関係ではいられません。", "アメリカは、台湾を守るかどうかをあえてはっきり言わない「あいまい戦略」をとってきました。"]}], "talk": [["台湾有事", "台湾をめぐって武力衝突が起きること"], ["日米同盟", "日本とアメリカが安全保障で協力する約束"], ["防衛費", "国を守るための予算。日本は大きく増やしている"]], "terms": [["総統", "台湾のトップ"], ["TSMC", "台湾の半導体メーカー。世界最大の受託製造会社"], ["尖閣諸島", "沖縄県の島々。中国も領有権を主張している"]], "quiz": {"q": "世界の最先端の半導体の多くを作っているのは？", "c": ["台湾", "ブラジル", "ロシア"], "a": 0, "why": "TSMCをはじめ台湾の工場が最先端の半導体の大部分を担っています。だから台湾の安全は世界経済の問題でもあります。"}, "match": "台湾|北朝鮮|尖閣|南シナ海|朝鮮半島|日米同盟|防衛費|防衛相|自衛隊|ミサイル|中台", "related": ["uschina", "jpseiji", "kokusai"]}, {"id": "ai", "group": "mondai", "emoji": "🤖", "title": "AIブームのしくみ", "sub": "なぜみんなAIにお金を注ぐの？", "one": "2022年末にChatGPTが登場してから、文章や画像を「考えて作る」AIに、世界中の会社が巨額のお金をつぎ込んでいます。主役はAIそのものだけでなく、半導体・データセンター・電気です。", "why": "株価、電気代、仕事のあり方、米中の競争まで、AIは今いちばん広く影響しているテーマだからです。", "blocks": [{"type": "flow", "title": "AIが私たちに届くまで", "steps": ["電気と冷却用の水", "データセンター（巨大なコンピューター倉庫）", "半導体（エヌビディアのGPUなど）", "AIモデル（OpenAI・Google・Anthropic・DeepSeekなど）", "アプリやサービス", "私たち"]}, {"type": "vs", "title": "期待と心配", "left": ["期待", ["仕事が速く、楽になる", "医療や科学の発見が進む", "新しい産業と雇用が生まれる"]], "right": ["心配", ["一部の仕事がなくなるかも", "電気・水を大量に使い、電気代が上がる", "うその情報やなりすまし", "株価が期待だけでふくらむ「バブル」の心配"]]}, {"type": "points", "title": "私たちとの関係", "items": ["マレーシアのジョホール州などには、データセンターが次々に建てられています。サラワク州にも大型投資が来ています。", "最先端のAI半導体は、アメリカが中国への輸出を規制しています。→「アメリカと中国」", "AI関連の会社の株は日経平均やナスダックを大きく動かします。→「株と株価指数」"]}], "talk": [["生成AI", "文章・画像・音声などを新しく作り出すAI"], ["データセンター", "AIを動かすコンピューターを大量に置いた施設"], ["GPU", "AIの計算が得意な半導体。エヌビディアが強い"]], "terms": [["生成AI", "文章や画像を作るAI"], ["エヌビディア", "AI用の半導体で世界トップのアメリカ企業"], ["AIバブル", "AI関連の株や投資が実力以上にふくらんでいるのでは、という見方"]], "quiz": {"q": "AIを動かすために大量に必要で、周辺住民の不安のもとになっているのは？", "c": ["紙と鉛筆", "電気と水", "石炭と鉄"], "a": 1, "why": "データセンターは発電所並みの電気と、冷やすための水を使います。"}, "flags": "", "match": "AI|人工知能|生成AI|ChatGPT|OpenAI|エヌビディア|NVIDIA|データセンター|半導体|Anthropic|Gemini", "related": ["kabu", "uschina", "energy"]}, {"id": "climate", "group": "mondai", "emoji": "🌡", "title": "気候変動とCOP", "sub": "地球温暖化の話し合いは何をもめている？", "one": "石炭・石油・ガスを燃やして出るCO2が地球を温め、猛暑・大雨・強い台風が増えています。COPは、その対策を話し合う毎年の世界会議です。", "why": "エネルギー政策、電気代、災害、国どうしのお金のやりとりまで、長く続くテーマだからです。", "blocks": [{"type": "flow", "title": "温暖化のしくみ", "steps": ["石炭・石油・ガスを燃やす", "CO2が空気中に増える", "熱が宇宙へ逃げにくくなる", "気温が上がる", "猛暑・大雨・強い台風・海面上昇"]}, {"type": "bars", "title": "CO2を多く出している国・地域（世界全体に占める割合、2023年ごろ）", "unit": "%", "items": [["中国", 31], ["アメリカ", 13], ["インド", 8], ["EU", 7], ["ロシア", 5], ["日本", 3]], "note": "今いちばん多く出しているのは中国。でも、これまでの合計ではアメリカやヨーロッパが多く出してきました。"}, {"type": "vs", "title": "COPでもめるところ", "left": ["先進国の言い分", ["今は中国やインドなども多く出している", "みんなで減らすべき"]], "right": ["途上国の言い分", ["温暖化の原因をつくったのは先進国", "対策や被害への備えのお金を出してほしい"]]}], "talk": [["パリ協定", "2015年に決まった、気温上昇を1.5〜2度に抑える世界の約束"], ["脱炭素", "CO2を出さない社会に変えること"], ["電化", "車や暖房などを、燃料から電気で動かすものに変えること"]], "terms": [["COP", "気候変動枠組み条約の締約国会議。毎年開かれる"], ["1.5度目標", "産業革命前からの気温上昇を1.5度に抑えるという目標"], ["適応", "温暖化の被害に備えること（堤防、暑さ対策など）"]], "quiz": {"q": "パリ協定の目標は、産業革命前からの気温上昇を何度以内に抑えること？", "c": ["0.5度", "1.5〜2度", "5度"], "a": 1, "why": "世界の気温はすでに約1.2〜1.5度上がっていて、目標はかなり厳しくなっています。"}, "match": "気候|温暖化|COP|脱炭素|CO2|二酸化炭素|パリ協定|再生可能|再エネ|猛暑", "related": ["energy", "kokusai", "uschina"]}]}</script>
+<script>
+(function(){
+  const K = JSON.parse(document.getElementById('kiso-data').textContent);
+  const P = K.primers, byId = Object.fromEntries(P.map(p => [p.id, p]));
+  const sec = document.getElementById('v-kiso');
+  const anchor = document.getElementById('v-archive');
+  if(anchor) anchor.after(sec);
+  const nav = document.getElementById('nav-kiso'); if(nav) nav.hidden = false;
+  const e = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const RKEY = 'newsbook-kiso-v1';
+  let ks = {}; try { ks = JSON.parse(localStorage.getItem(RKEY) || '{}') || {}; } catch(_) {}
+  ks.read = ks.read || {}; ks.quiz = ks.quiz || {};
+  const keep = () => { try { localStorage.setItem(RKEY, JSON.stringify(ks)); } catch(_) {} };
+  let cur = null;
+
+  /* 話題 → 関連講座 */
+  function related(s, n){
+    if(!s) return [];
+    const ti = s.title || '', body = [].concat(s.points || []).join(' ') + ' ' + (s.background || '');
+    const out = [];
+    for(const p of P){
+      if(p.regions && !p.regions.includes(s.region)) continue;
+      const re = new RegExp(p.match, p.flags === '' ? 'g' : 'gi');
+      const cnt = t => new Set((t.match(re) || [])).size;
+      const sc = cnt(ti) * 3 + cnt(body);
+      if(sc >= 3) out.push([sc, p]);
+    }
+    return out.sort((a, b) => b[0] - a[0]).slice(0, n || 3).map(x => x[1]);
+  }
+  window.kisoRelated = related;
+  window.kisoLinks = function(s){
+    const r = related(s, 3); if(!r.length) return '';
+    return `<div class="sec kiso-links swipe-no"><h3>📘 そもそも講座でわかる</h3><p>この話の「前提」を3分でおさらい</p><div class="kchips">${r.map(p => `<a class="kchip" href="#kiso-${e(p.id)}">${e(p.emoji)} ${e(p.title)}</a>`).join('')}</div></div>`;
+  };
+  function todayStories(){ try { return (typeof D !== 'undefined' && D && D.stories) ? D.stories : []; } catch(_) { return []; } }
+  function storiesFor(p){ return todayStories().filter(s => related(s, 3).includes(p)); }
+
+  /* 図のかたち */
+  function blk(b){
+    const h = b.title ? `<h4>${e(b.title)}</h4>` : '';
+    const note = b.note ? `<p class="knote">${e(b.note)}</p>` : '';
+    if(b.type === 'flow') return `<div class="kblk">${h}<div class="kflow">${b.steps.map((t, i) => `<div><i>${i+1}</i><span>${e(t)}</span></div>`).join('<s aria-hidden="true">↓</s>')}</div>${note}</div>`;
+    if(b.type === 'vs') return `<div class="kblk">${h}<div class="kvs">${[b.left, b.right].map(x => `<div><b>${e(x[0])}</b><ul>${x[1].map(t => `<li>${e(t)}</li>`).join('')}</ul></div>`).join('')}</div>${note}</div>`;
+    if(b.type === 'timeline') return `<div class="kblk">${h}<ol class="ktl">${b.items.map(x => `<li><b>${e(x[0])}</b>${e(x[1])}</li>`).join('')}</ol>${note}</div>`;
+    if(b.type === 'cast') return `<div class="kblk">${h}<div class="kcast">${b.items.map(x => `<div><span>${e(x[0])}</span><b>${e(x[1])}</b><small>${e(x[2])}</small></div>`).join('')}</div>${note}</div>`;
+    if(b.type === 'points') return `<div class="kblk">${h}<ul class="kpts">${b.items.map(t => `<li>${e(t)}</li>`).join('')}</ul>${note}</div>`;
+    if(b.type === 'bars'){
+      const vals = b.items.map(x => x[1]), mx = Math.max(0, ...vals), mn = Math.min(0, ...vals), span = (mx - mn) || 1;
+      const z = (-mn / span) * 100;
+      const rows = b.items.map(([l, v]) => {
+        const w = Math.abs(v) / span * 100, left = v >= 0 ? z : z - w;
+        return `<div class="kbar"><span>${e(l)}</span><div>${mn < 0 ? `<b class="zero" style="left:${z}%"></b>` : ''}<i class="${v < 0 ? 'neg' : ''}" style="left:${left}%;width:${w}%"></i></div><em class="${v < 0 ? 'neg' : ''}">${v > 0 && mn < 0 ? '+' : ''}${v}${e(b.unit || '')}</em></div>`;
+      }).join('');
+      return `<div class="kblk">${h}<div class="kbars">${rows}</div>${note}</div>`;
+    }
+    if(b.type === 'cycle'){
+      const n = b.steps.length, R = 38, pt = i => { const a = -Math.PI/2 + i * 2*Math.PI/n; return [50 + R*Math.cos(a), 50 + R*Math.sin(a)]; };
+      const arcs = b.steps.map((_, i) => {
+        const a0 = -Math.PI/2 + (i + .32) * 2*Math.PI/n, a1 = -Math.PI/2 + (i + .68) * 2*Math.PI/n;
+        const p0 = [50 + R*Math.cos(a0), 50 + R*Math.sin(a0)], p1 = [50 + R*Math.cos(a1), 50 + R*Math.sin(a1)];
+        const t = [-Math.sin(a1), Math.cos(a1)], nx = [Math.cos(a1), Math.sin(a1)];
+        const tip = [p1[0] + t[0]*2.2, p1[1] + t[1]*2.2], b1 = [p1[0] + nx[0]*1.6, p1[1] + nx[1]*1.6], b2 = [p1[0] - nx[0]*1.6, p1[1] - nx[1]*1.6];
+        const f = q => q.map(v => v.toFixed(2)).join(',');
+        return `<path d="M${f(p0)} A${R},${R} 0 0 1 ${f(p1)}"/><polygon points="${f(tip)} ${f(b1)} ${f(b2)}"/>`;
+      }).join('');
+      return `<div class="kblk">${h}<div class="kcycle"><svg viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="${R}"/>${arcs}</svg><p>🔁<br>くり返す</p>${b.steps.map((t, i) => { const [x, y] = pt(i); return `<div style="left:${x}%;top:${y}%">${e(t)}</div>`; }).join('')}</div>${note}</div>`;
+    }
+    return '';
+  }
+
+  function hasW(t){ try { return st.words.some(w => w.term === t); } catch(_) { return false; } }
+  function list(){
+    const done = P.filter(p => ks.read[p.id]).length;
+    const cnt = {}; todayStories().forEach(s => related(s, 2).forEach((p, j) => { cnt[p.id] = (cnt[p.id] || 0) + (j ? 1 : 2); }));
+    const todayP = P.filter(p => cnt[p.id]).sort((a, b) => cnt[b.id] - cnt[a.id]).slice(0, 5);
+    const todayIds = new Set(todayP.map(p => p.id));
+    sec.className = 'view';
+    sec.innerHTML = `<h2>そもそも講座</h2>
+      <p class="kiso-lede">ニュースが「ふーん」で終わらないための、世界の“前提知識”。1つ3分、図で読めます。</p>
+      <div class="kiso-prog"><b>${P.length}講座のうち ${done} 講座を読みました${done === P.length ? ' 🎉' : ''}</b><div class="kiso-bar"><i style="width:${done / P.length * 100}%"></i></div></div>
+      ${todayP.length ? `<div class="kiso-grp"><h3>📌 今日のニュースを読むなら <small>まずはこの5つから</small></h3><div class="kchips">${todayP.map(p => `<button type="button" class="kchip k-${e(p.group)}" data-kiso="${e(p.id)}">${e(p.emoji)} ${e(p.title)}${ks.read[p.id] ? ' ✓' : ''}</button>`).join('')}</div></div>` : ''}
+      ${K.groups.map(g => `<div class="kiso-grp k-${e(g.id)}"><h3>${e(g.emoji)} ${e(g.title)} <small>${e(g.sub)}</small></h3><div class="kiso-cards">${P.filter(p => p.group === g.id).map(p => `<button type="button" class="kcard" data-kiso="${e(p.id)}">${todayIds.has(p.id) ? '<em class="ktoday">今日のニュースに登場</em>' : ''}${ks.read[p.id] ? '<em class="kdone">✓ 読んだ</em>' : ''}<span class="ke">${e(p.emoji)}</span><b>${e(p.title)}</b><span>${e(p.sub)}</span></button>`).join('')}</div></div>`).join('')}`;
+  }
+  function detail(p){
+    const order = K.groups.flatMap(g => P.filter(x => x.group === g.id));
+    const i = order.indexOf(p), nx = order[i + 1];
+    const q = p.quiz, qa = ks.quiz[p.id];
+    const ss = storiesFor(p);
+    sec.className = 'view k-' + p.group;
+    sec.innerHTML = `<div class="kd">
+      <button type="button" class="kback" data-kiso="">← 講座の一覧</button>
+      <div class="khead"><span class="ke">${e(p.emoji)}</span><h2>${e(p.title)}</h2><p>${e(p.sub)}</p></div>
+      <div class="kone"><b>ひとことで言うと</b>${e(p.one)}</div>
+      <p class="kwhy"><b>なぜニュースによく出る？</b> ${e(p.why)}</p>
+      ${p.blocks.map(blk).join('')}
+      <div class="kblk"><h4>📰 ニュースではこう言います</h4><div class="ktalk">${p.talk.map(([a, b]) => `<div><b>${e(a)}</b><span>${e(b)}</span></div>`).join('')}</div></div>
+      <div class="kblk"><h4>🧠 1問チェック</h4><div class="kquiz"><p>${e(q.q)}</p><div class="kc">${q.c.map((c, j) => `<button type="button" data-kq="${j}" class="${qa != null ? (j === q.a ? 'ok' : (j === qa ? 'ng' : '')) : ''}">${e(c)}</button>`).join('')}</div>${qa != null ? `<p class="kans">${qa === q.a ? '⭕ 正解！' : '❌ おしい！ 正解は「' + e(q.c[q.a]) + '」'}　${e(q.why)}</p>` : ''}</div></div>
+      <div class="kblk"><h4>📒 おぼえておきたい言葉</h4><div class="kterms">${p.terms.map(([t, d]) => `<div><p><b>${e(t)}</b>${e(d)}</p>${typeof st !== 'undefined' ? `<button type="button" data-kw="${e(t)}" data-kd="${e(d)}" class="${hasW(t) ? 'on' : ''}">${hasW(t) ? '単語帳に追加済み' : '単語帳に追加'}</button>` : ''}</div>`).join('')}</div></div>
+      ${ss.length ? `<div class="kblk"><h4>🗞 今日のニュースでは</h4><div class="kstories">${ss.map(s => `<a href="#today" data-ks="${e(s.id)}">${e(s.emoji || '')} ${e(s.title)}</a>`).join('')}</div></div>` : ''}
+      <div class="kblk"><h4>🔗 あわせて読みたい</h4><div class="kchips">${p.related.map(id => byId[id]).filter(Boolean).map(r => `<button type="button" class="kchip k-${e(r.group)}" data-kiso="${e(r.id)}">${e(r.emoji)} ${e(r.title)}${ks.read[r.id] ? ' ✓' : ''}</button>`).join('')}</div></div>
+      <div class="kfoot"><button type="button" class="kread ${ks.read[p.id] ? 'on' : ''}" data-kr="1">${ks.read[p.id] ? '✓ 読みました' : '読んだ！'}</button>${nx ? `<button type="button" class="kchip k-${e(nx.group)}" data-kiso="${e(nx.id)}">次の講座：${e(nx.emoji)} ${e(nx.title)} →</button>` : ''}</div>
+    </div>`;
+  }
+  window.renderKiso = function(){ const p = cur && byId[cur]; if(p) detail(p); else list(); };
+  function open(id){ cur = id || null; window.renderKiso(); scrollTo(0, 0); }
+
+  sec.addEventListener('click', ev => {
+    const t = ev.target.closest('button,a'); if(!t) return;
+    if(t.dataset.kiso != null){ open(t.dataset.kiso); return; }
+    const p = byId[cur]; if(!p) return;
+    if(t.dataset.kq != null){ ks.quiz[p.id] = +t.dataset.kq; ks.read[p.id] = ks.read[p.id] || new Date().toISOString().slice(0, 10); keep(); detail(p); return; }
+    if(t.dataset.kr){ if(ks.read[p.id]) delete ks.read[p.id]; else ks.read[p.id] = new Date().toISOString().slice(0, 10); keep(); detail(p); return; }
+    if(t.dataset.kw != null){
+      try {
+        const term = t.dataset.kw;
+        if(hasW(term)) st.words = st.words.filter(w => w.term !== term);
+        else st.words.push({term, def: t.dataset.kd, date: (typeof D !== 'undefined' && D.date) || '', savedAt: (typeof today === 'function' ? today() : new Date().toISOString().slice(0, 10)), storyTitle: 'そもそも講座「' + p.title + '」', known: false, own: true});
+        save();
+      } catch(_) {}
+      detail(p); return;
+    }
+    if(t.dataset.ks){ ev.preventDefault(); const id = t.dataset.ks; if(typeof openStory === 'function') openStory(id); else location.hash = '#today'; }
+  });
+
+  /* #kiso-ID でその講座を直接ひらく（話題の中のリンクから） */
+  function deep(){
+    const m = location.hash.match(/^#kiso-([\w-]+)$/);
+    if(!m) return false;
+    cur = byId[m[1]] ? m[1] : null;
+    history.replaceState(null, '', '#kiso');
+    if(typeof route === 'function') route(); else window.renderKiso();
+    scrollTo(0, 0);
+    return true;
+  }
+  addEventListener('hashchange', deep);
+  if(nav) nav.addEventListener('click', () => { cur = null; if(location.hash === '#kiso') window.renderKiso(); });
+  if(!deep() && location.hash === '#kiso' && typeof route === 'function') route();
 })();
 </script>
 
