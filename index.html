@@ -308,6 +308,7 @@ body.noscroll{overflow:hidden}
 .wed{display:grid;gap:6px}.wed textarea{font:inherit;font-size:14px;width:100%;box-sizing:border-box;border:1.5px solid var(--accent);border-radius:10px;padding:8px;background:var(--surface);color:var(--ink)}.wed>span{display:flex;gap:6px}
 .wexp{margin-top:12px;text-align:center}
 #pastq{margin-top:16px}#pastq h3{font-size:15px;margin:0 0 8px}
+.pastop{font-size:13px;line-height:1.7;background:var(--accent-soft);border-radius:10px;padding:8px 10px;margin:8px 0}
 .srsd{letter-spacing:2px;color:var(--accent)}
 .alldone .pill{--rc:var(--accent);border-radius:12px;text-align:left}.alldone .kisonext{align-self:flex-start;margin:0}.alldone{flex-basis:100%;display:flex;flex-direction:column;gap:6px;padding:12px;border-radius:12px;background:color-mix(in srgb,var(--my) 10%,transparent)}.alldone>b{color:var(--my)}.alldone .dn{display:flex;flex-wrap:wrap;gap:6px;align-items:center}.alldone small{color:var(--muted)}
 .links{display:grid;gap:8px}
@@ -868,6 +869,7 @@ function renderSheet(){
       <div class="sec"><h3>そもそも、どういう話？</h3><div class="bg"><p style="margin:0">${withTerms(applyMarks(esc(s.background)), s, used)}</p></div></div>
       ${s.why ? `<div class="sec"><h3>わたしに関係ある？</h3><p style="margin:0">${applyMarks(esc(s.why))}</p></div>` : ''}
       ${s.opinion ? `<div class="op"><div class="q">💬 ${esc(s.opinion.q)}</div><div class="qopts">${s.opinion.choices.map((c,i) => `<button class="qopt" type="button" data-op="${i}" aria-pressed="${!!op && op.choice===c}">${esc(c)}</button>`).join('')}</div>
+        ${(() => { const po = s.thread && st.opinions.filter(o => o.thread === s.thread && !(o.date === D.date && o.id === s.id)).sort((a,b) => b.date.localeCompare(a.date))[0]; return po ? `<div class="pastop">🕰 前に（${esc(po.date.slice(5).replace('-','/'))}）この話題で「${esc(po.q)}」に<b>「${esc(po.choice)}」</b>を選んでいました。今はどうですか？</div>` : ''; })()}
         <small>${op ? '選んだ意見は「ふりかえり」に残ります。考えが変わったら選び直せます。' : '正解はありません。今の自分の考えに一番近いものを選んでください。'}</small></div>` : ''}
       ${tellHTML(s)}
       <div class="more"><span>ここから先は、もっと知りたいとき用</span></div>
@@ -1158,7 +1160,7 @@ function renderReview(){
       <div class="tabs">${reveal?`<button class="chip" type="button" data-q="ok">覚えてた</button><button class="chip" type="button" data-q="ng">まだ</button>`:`<button class="chip" type="button" data-q="flip">めくる</button>`}</div></div>`;
   }
   buildMiss();
-  $('#rop').innerHTML = st.opinions.length ? st.opinions.slice().reverse().map(o=>`<div class="item"><b>${esc(o.choice)}</b><span>${esc(o.q)}</span><small>${esc(o.date)}・${esc(o.title)}</small></div>`).join('') : `<p class="empty">話題の最後にある「あなたはどう思う？」を選ぶと、ここに自分の考えがたまっていきます。</p>`;
+  $('#rop').innerHTML = st.opinions.length ? st.opinions.slice().reverse().map(o=>`<div class="item"><b>${esc(o.choice)}</b><span>${esc(o.q)}</span><small>${esc(o.date)}・${o.id ? `<button class="gostory" type="button" data-gs="${esc(o.date)}|${esc(o.id)}">${esc(o.title)} →</button>` : esc(o.title)}</small></div>`).join('') : `<p class="empty">話題の最後にある「あなたはどう思う？」を選ぶと、ここに自分の考えがたまっていきます。</p>`;
   $('#rbm').innerHTML = wkBm.length ? wkBm.map(b=>`<div class="item"><a href="#today" data-go="${esc(b.date)}">${esc(b.title)}</a><small>${esc(b.date)}</small></div>`).join('') : `<p class="empty">今週保存した話題はまだありません。</p>`;
 }
 $('#rcard').addEventListener('click', e => {
@@ -1172,6 +1174,7 @@ $('#rcard').addEventListener('click', e => {
   if(b.dataset.q==='next'){ if(w){ delete wq[w.term]; delete wrev[w.term]; } curTerm = null; reveal = false; }
   renderReview();
 });
+$('#rop').addEventListener('click', e => { const b = e.target.closest('[data-gs]'); if(!b) return; const [d, id] = b.dataset.gs.split('|'); goStory(d, id); });
 $('#rfol').addEventListener('click', e => { const b = e.target.closest('[data-gs]'); if(!b) return; const [d, id] = b.dataset.gs.split('|'); goStory(d, id); });
 $('#rbm').addEventListener('click', e => { const a=e.target.closest('a'); if(a && a.dataset.go) openEdition(a.dataset.go); });
 
