@@ -590,9 +590,11 @@ function applyMarks(html){
   st.marks.forEach(m => { const t = esc(m.text); if(t.length > 1 && html.includes(t)) html = html.split(t).join(`<mark>${t}</mark>`) });
   return html;
 }
+var unrFirst = (() => { try{ return localStorage.getItem('newsbook-unr') === '1'; }catch(e){ return false; } })();
 function renderFilters(){
   $('#filters').innerHTML = regions.map(r => `<button class="chip" type="button" data-r="${r}" aria-pressed="${r===filter}">${r}</button>`).join('') +
-    `<button class="chip" type="button" data-r="★" aria-pressed="${filter==='★'}">🔖 あとで読む</button>`;
+    `<button class="chip" type="button" data-r="★" aria-pressed="${filter==='★'}">🔖 あとで読む</button>` +
+    `<button class="chip" type="button" data-unr="1" aria-pressed="${unrFirst}">⏩ まだの話を先に</button>`;
 }
 let pqT = 0;
 async function searchPast(q){
@@ -608,7 +610,7 @@ async function searchPast(q){
 $('#pastq').addEventListener('click', e => { const g = e.target.closest('[data-gs]'); if(!g) return; const [d, id] = g.dataset.gs.split('|'); $('#q').value = ''; qword = ''; searchPast(''); goStory(d, id); });
 $('#q').addEventListener('input', e => { qword = e.target.value.trim().toLowerCase(); renderStories(); clearTimeout(pqT); pqT = setTimeout(() => searchPast(qword), 300); });
 $('#score').addEventListener('click', e => { if(e.target.closest('[data-dshare]')){ shareDay(); return; } const d = e.target.closest('[data-dopen]'); if(d){ openSheet(d.dataset.dopen); return; } const b = e.target.closest('.laterbtn'); if(!b) return; filter = '★'; renderFilters(); renderStories(); });
-$('#filters').addEventListener('click', e => { const b = e.target.closest('button'); if(!b) return; filter = b.dataset.r; renderFilters(); renderStories(); });
+$('#filters').addEventListener('click', e => { const b = e.target.closest('button'); if(!b) return; if(b.dataset.unr){ unrFirst = !unrFirst; try{ localStorage.setItem('newsbook-unr', unrFirst ? '1' : '0'); }catch(_){} renderFilters(); renderStories(); return; } filter = b.dataset.r; renderFilters(); renderStories(); });
 let sample = null;
 
 function figHTML(f){
@@ -688,6 +690,7 @@ function renderStories(){ try{ navDue(); }catch(e){}
   let hero = null;
   if(filter !== '★' && filter !== 'すべて' && !placeF && list.length > 2){ hero = list.reduce((a,b) => cnt(b) > cnt(a) ? b : a); list = list.filter(x => x !== hero); }
   list = list.filter(isFol).concat(list.filter(s => !isFol(s)));
+  if(unrFirst){ const done = s => s.quiz && st.quiz[qkey(s)] != null; list = list.filter(s => !done(s)).concat(list.filter(done)); }
   if(hero) list.unshift(hero);
   tileOrder = list.map(x => x.id);
   $('#stories').innerHTML = list.length ? list.map(x => tileHTML(x, x === hero)).join('') : (qword ? `<p class="empty">「${esc(qword)}」が出てくる話は今日の号にはありません。</p>` : `<p class="empty">まだ「あとで読む」にした話はありません。話題を開いて「🔖 あとで読む」を押すとここに集まります。</p>`);
