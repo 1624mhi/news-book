@@ -600,7 +600,7 @@ async function searchPast(q){
 }
 $('#pastq').addEventListener('click', e => { const g = e.target.closest('[data-gs]'); if(!g) return; const [d, id] = g.dataset.gs.split('|'); $('#q').value = ''; qword = ''; searchPast(''); goStory(d, id); });
 $('#q').addEventListener('input', e => { qword = e.target.value.trim().toLowerCase(); renderStories(); clearTimeout(pqT); pqT = setTimeout(() => searchPast(qword), 300); });
-$('#score').addEventListener('click', e => { const d = e.target.closest('[data-dopen]'); if(d){ openSheet(d.dataset.dopen); return; } const b = e.target.closest('.laterbtn'); if(!b) return; filter = '★'; renderFilters(); renderStories(); });
+$('#score').addEventListener('click', e => { if(e.target.closest('[data-dshare]')){ shareDay(); return; } const d = e.target.closest('[data-dopen]'); if(d){ openSheet(d.dataset.dopen); return; } const b = e.target.closest('.laterbtn'); if(!b) return; filter = '★'; renderFilters(); renderStories(); });
 $('#filters').addEventListener('click', e => { const b = e.target.closest('button'); if(!b) return; filter = b.dataset.r; renderFilters(); renderStories(); });
 let sample = null;
 
@@ -825,6 +825,13 @@ async function tellStory(s, b){
   try{ if(navigator.share){ await navigator.share(url ? {text, url} : {text}); return; } }catch(e){ if(e && e.name === 'AbortError') return; }
   try{ await navigator.clipboard.writeText(text + (url ? '\n' + url : '')); toastMsg('📋 コピーしました'); }catch(e){ toastMsg('コピーできませんでした'); }
 }
+async function shareDay(){
+  const qs = D.stories.filter(s => s.quiz), ok = qs.filter(s => st.quiz[qkey(s)] === s.quiz.answer), t = today();
+  const ws = st.words.filter(w => (w.savedAt||w.date) === t).map(w => w.term);
+  const text = `📰 ニュース帳 ${D.date.replace(/-/g,'.')}\n予想 ${ok.length}／${qs.length}問 的中　${streakText()}\n` + (ws.length ? `覚えたい言葉：${ws.slice(0,8).join('、')}\n` : '') + `いちばん気になった話：${(D.stories.find(s => isBm(s.id)) || D.stories[0]).title}`;
+  try{ if(navigator.share){ await navigator.share({text}); return; } }catch(e){ if(e && e.name === 'AbortError') return; }
+  try{ await navigator.clipboard.writeText(text); toastMsg('📋 今日の記録をコピーしました'); }catch(e){ toastMsg('コピーできませんでした'); }
+}
 function doneHTML(qs, ok){
   const r = ok.length / qs.length, msg = r >= .8 ? 'すごい、ほぼ読み通せています！' : r >= .5 ? 'いい感じ。外れた話こそ覚えやすいです。' : '外れが多い日は、学べることが多い日です。';
   const ng = qs.filter(s => st.quiz[qkey(s)] !== s.quiz.answer);
@@ -836,6 +843,7 @@ function doneHTML(qs, ok){
     ${fol.length ? `<span class="dn">追いかけ中の話の続き：${fol.map(s => `<button type="button" class="pill" data-dopen="${esc(s.id)}">${esc(s.emoji||'📰')} ${esc(s.hook||s.title)}</button>`).join('')}</span>` : ''}
     ${kp ? `<a class="kisonext" href="#kiso-${esc(kp.id)}">📘 仕上げに3分：${esc(kp.emoji)} ${esc(kp.title)} →</a>` : ''}
     ${(() => { const n = srsPool().due.length; return n ? `<a class="kisonext" href="#review">🧠 今日ふりかえる単語 ${n}語 →</a>` : ''; })()}
+    <button type="button" class="pill" data-dshare="1">📤 今日の記録をメモする・送る</button>
     <small>次の号は明日の朝8時（マレーシア時間）に届きます。</small></div>`;
 }
 function nextHTML(s){
