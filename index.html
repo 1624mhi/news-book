@@ -316,6 +316,9 @@ body.noscroll{overflow:hidden}
 .sheet-in{position:relative}
 .qbox{width:100%;font:inherit;font-size:15px;padding:9px 14px;border:1px solid var(--line);border-radius:99px;background:var(--surface);color:var(--ink);margin:4px 0 2px}
 .wqopts{display:grid;gap:6px;margin:6px 0}.wqopts .qopt{text-align:left;font-size:13.5px;line-height:1.5}
+.top3{display:grid;gap:2px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:10px 12px;margin-bottom:10px}.top3 h3{margin:0 0 4px;font-size:14px}
+.top3 button{display:grid;grid-template-columns:auto auto 1fr auto;gap:8px;align-items:center;text-align:left;font:inherit;color:var(--ink);background:none;border:0;border-top:1px dashed var(--line);padding:8px 2px;cursor:pointer}
+.top3 button:first-of-type{border-top:0}.top3 .n{font-family:var(--f-mono);color:var(--accent);font-weight:700}.top3 .e{font-size:20px}.top3 .h{font-size:14px;line-height:1.5;font-weight:700}.top3 small{color:var(--muted);font-size:11px;white-space:nowrap}
 .toprow{display:flex;justify-content:space-between;align-items:center;gap:8px}
 .fsbtn{font:inherit;font-size:12px;color:var(--muted);background:var(--surface);border:1px solid var(--line);border-radius:99px;padding:3px 10px;cursor:pointer;flex:none}.fsbtn b{color:var(--ink)}
 html.fs1 .sh-body,html.fs1 #v-kiso,html.fs1 #wbody,html.fs1 .sh-hero h2{zoom:1.12}
@@ -367,6 +370,7 @@ html.fs2 .sh-body,html.fs2 #v-kiso,html.fs2 #wbody,html.fs2 .sh-hero h2{zoom:1.2
     <div class="datebar"><label for="edsel" class="sync">号</label><select id="edsel"></select><span class="sync" id="sync"></span></div>
     <nav class="filters" aria-label="地域で絞り込む" id="filters"></nav>
     <input type="search" id="q" class="qbox" placeholder="🔍 言葉でさがす（例：金利、ナジブ、AI）" aria-label="話題を言葉でさがす">
+    <div class="top3" id="top3"></div>
     <div class="score" id="score"></div>
     <div class="wmap" id="wmap" hidden></div>
     <main id="stories" class="tiles"></main>
@@ -600,6 +604,9 @@ function renderStories(){
   tileOrder = list.map(x => x.id);
   $('#stories').innerHTML = list.length ? list.map(x => tileHTML(x, x === hero)).join('') : (qword ? `<p class="empty">「${esc(qword)}」が出てくる話は今日の号にはありません。</p>` : `<p class="empty">まだ保存した話題はありません。話題を開いて「☆ 保存」を押すとここに集まります。</p>`);
   const qs = D.stories.filter(s => s.quiz), done = qs.filter(s => st.quiz[qkey(s)] != null), ok = done.filter(s => st.quiz[qkey(s)] === s.quiz.answer);
+  { const c = s => new Set(s.headlines.map(h => h.outlet)).size, top = D.stories.slice().sort((a,b) => c(b) - c(a)).slice(0, 3);
+    $('#top3').hidden = !!(qword || filter !== 'すべて');
+    $('#top3').innerHTML = `<h3>☀️ 今朝の世界を3行で</h3>${top.map((s,i) => `<button type="button" data-open="${esc(s.id)}"><span class="n">${i+1}</span><span class="e">${esc(s.emoji||'📰')}</span><span class="h">${esc(s.hook||s.title)}</span><small>${c(s)}媒体</small></button>`).join('')}`; }
   $('#score').hidden = !qs.length;
   const later = D.stories.filter(s => isBm(s.id) && (!s.quiz || st.quiz[qkey(s)] == null)).length;
   $('#score').innerHTML = `<div class="prog" aria-label="今日の進み具合"><div class="pbar"><i style="width:${qs.length ? Math.round(done.length/qs.length*100) : 0}%"></i></div><span>${done.length}／${qs.length}話 予想ずみ</span></div>${later && filter !== '★' ? `<button type="button" class="laterbtn" data-r="★">🔖 あとで読むにした話が ${later} 件あります →</button>` : ''}<b>${ok.length}／${done.length}</b><span>今日の予想の的中（全${qs.length}問）</span><span class="streak">${streakText()}</span><span>追いかけ中の話題 ${st.follows.length}</span><span>あなたの意見 ${st.opinions.length}件</span>${qs.length && done.length === qs.length ? `<span class="alldone">🎉 今日の予想を全部終えました！ 次の号は明日の朝8時に届きます。</span>` : ''}`;
@@ -816,6 +823,7 @@ function onStoryClick(e){
 }
 $('#stories').addEventListener('click', onStoryClick);
 $('#sheet').addEventListener('click', onStoryClick);
+$('#top3').addEventListener('click', onStoryClick);
 let asking = null;
 async function ask(id, preset){
   const s = D.stories.find(x=>x.id===id); const ta = $('#q-'+id); const out = $('#a-'+id);
