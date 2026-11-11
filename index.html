@@ -301,6 +301,7 @@ body.noscroll{overflow:hidden}
 @keyframes okpulse{0%{transform:scale(1)}40%{transform:scale(1.03)}100%{transform:scale(1)}}
 @media (prefers-reduced-motion: reduce){.burst{animation:none;opacity:0}.qopt.right.fresh{animation:none}}
 .week{display:grid;gap:12px;margin-bottom:18px}.wkn{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.wkr{display:grid;gap:6px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px}.wkr div{display:grid;grid-template-columns:84px 1fr 40px;gap:8px;align-items:center}.wkr i{height:10px;border-radius:99px;background:var(--rc,var(--accent));min-width:4px}.wkr small{color:var(--muted);text-align:right}.week h3{margin:4px 0 0;font-size:15px}.wfol{justify-self:start;margin-top:4px;--rc:var(--accent)}.wkr i[data-r="日本"]{background:var(--jp)}.wkr i[data-r="マレーシア"]{background:var(--my)}.wkr i[data-r="世界"]{background:var(--world)}
+.srsd{letter-spacing:2px;color:var(--accent)}
 .alldone .pill{--rc:var(--accent);border-radius:12px;text-align:left}.alldone .kisonext{align-self:flex-start;margin:0}.alldone{flex-basis:100%;display:flex;flex-direction:column;gap:6px;padding:12px;border-radius:12px;background:color-mix(in srgb,var(--my) 10%,transparent)}.alldone>b{color:var(--my)}.alldone .dn{display:flex;flex-wrap:wrap;gap:6px;align-items:center}.alldone small{color:var(--muted)}
 .links{display:grid;gap:8px}
 .linkbtn{display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:center;text-align:left;font:inherit;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:8px 12px;cursor:pointer}
@@ -1017,7 +1018,26 @@ $('#addword').addEventListener('submit', e => {
 });
 
 /* ---------- ふりかえり ---------- */
-let qi = 0, reveal = false;
+let qi = 0, reveal = false, curTerm = null, ahead = false;
+const SRS = [1, 3, 7, 14];
+const addDays = n => { const d = new Date(); d.setDate(d.getDate() + n); return d.toLocaleDateString('sv-SE',{timeZone:'Asia/Kuala_Lumpur'}); };
+function srsPool(){
+  const t = today(), ws = st.words.filter(w => !w.known).sort((a, b) => (a.due||'').localeCompare(b.due||'') || (a.lastAt||0) - (b.lastAt||0));
+  return {all: ws, due: ws.filter(w => !w.due || w.due <= t)};
+}
+function curWord(){
+  const {all, due} = srsPool(), list = ahead ? all : due;
+  let w = curTerm && all.find(x => x.term === curTerm);
+  if(!w){ w = list[0] || null; curTerm = w ? w.term : null; }
+  return {w, all, due};
+}
+function srsAnswer(w, ok){
+  w.lastAt = Date.now();
+  if(ok){ w.box = Math.min((w.box||0) + 1, SRS.length); w.due = addDays(SRS[w.box-1]);
+    if(w.box >= SRS.length){ w.known = true; w.knownAt = today(); toastMsg('🎓「' + w.term + '」を覚えました！'); } }
+  else { w.box = 0; w.due = today(); }
+  save();
+}
 function weekAgo(){ const d = new Date(); d.setDate(d.getDate()-7); return d.toLocaleDateString('sv-SE',{timeZone:'Asia/Kuala_Lumpur'}); }
 const retry = {};
 async function buildMiss(){
@@ -1077,20 +1097,21 @@ function renderReview(){
   const known = st.words.filter(w=>w.known).length;
   $('#rstats').innerHTML = [[wkWords.length,'今週ためた単語'],[wkBm.length,'今週保存した話題'],[wkMarks.length,'今週のマーカー・質問'],[`${known}/${st.words.length}`,'覚えた単語'],[Object.keys(st.quiz).length,'これまで予想した数'],[`🔥${streak().n}`,'連続で予想した日数'],[Object.keys((kisoGet()||{}).read||{}).length,'読んだ そもそも講座'],[(st.badges||[]).length+'/'+BADGES.length,'集めたバッジ']]
     .map(([n,l])=>`<div class="stat"><b>${n}</b><span>${l}</span></div>`).join('');
-  const pool = st.words.filter(w=>!w.known);
+  const {w, all, due} = curWord();
+  const hd = n => ahead ? `先取りでふりかえり中（${all.length}語）` : `今日ふりかえる単語 あと${n}語`;
   if(!st.words.length){ $('#rcard').innerHTML = `<p class="empty">単語をためると、ここで暗記カードとしてふりかえれます。</p>`; }
-  else if(!pool.length){ $('#rcard').innerHTML = `<p class="empty">全部「覚えた」になりました。新しい単語をためていきましょう。</p>`; }
+  else if(!all.length){ $('#rcard').innerHTML = `<p class="empty">全部「覚えた」になりました。新しい単語をためていきましょう。</p>`; }
+  else if(!w){ const nx = all[0]; $('#rcard').innerHTML = `<div class="card"><div class="q">✅ 今日の分は終わり！</div><div class="a">忘れかけたころにもう一度出すと、記憶に残りやすくなります。次は ${esc((nx.due||'').slice(5).replace('-','/'))} に${all.filter(x => x.due === nx.due).length}語が出てきます。</div><div class="tabs"><button class="chip" type="button" data-q="ahead">先取りで続ける</button></div></div>`; }
   else {
-    const w = pool[qi % pool.length];
-    const ch = wordChoices(w);
+    const ch = wordChoices(w), box = w.box||0, dots = `<span class="srsd" title="覚えるまでの段階">${SRS.map((_, i) => i < box ? '●' : '○').join('')}</span>`;
     if(ch){ const ans = wq[w.term];
-      $('#rcard').innerHTML = `<div class="card"><small>まだ覚えていない単語 ${(qi%pool.length)+1}／${pool.length}　意味はどれ？</small>
+      $('#rcard').innerHTML = `<div class="card"><small>${hd(due.length)}　${dots}　意味はどれ？</small>
         <div class="q">${esc(w.term)}</div><div class="wqopts">${ch.map((d,i) => `<button type="button" class="qopt${ans!=null && d===w.def?' right':''}${ans===i && d!==w.def?' wrong':''}" data-wq="${i}" ${ans!=null?'disabled':''}>${esc(shortText(d, 60))}</button>`).join('')}</div>
-        ${ans!=null ? `<div class="a">${ch[ans]===w.def?'◎ 正解！':'△ 正解はこちら：'+esc(w.def)}</div><div class="tabs"><button class="chip" type="button" data-q="known">覚えた</button><button class="chip" type="button" data-q="next">次へ</button></div>` : ''}</div>`;
+        ${ans!=null ? `<div class="a">${ch[ans]===w.def?'◎ 正解！ '+(w.known?'これで覚えました 🎓':'次は '+esc((w.due||'').slice(5).replace('-','/'))+' にもう一度'):'△ 正解はこちら：'+esc(w.def)+'<br><small>あとでもう一度出します</small>'}</div><div class="tabs"><button class="chip" type="button" data-q="next">次へ</button>${w.known?'':'<button class="chip" type="button" data-q="known">もう覚えた</button>'}</div>` : ''}</div>`;
     } else
-    $('#rcard').innerHTML = `<div class="card"><small>まだ覚えていない単語 ${(qi%pool.length)+1}／${pool.length}</small>
+    $('#rcard').innerHTML = `<div class="card"><small>${hd(due.length)}　${dots}</small>
       <div class="q">${esc(w.term)}</div>${reveal?`<div class="a">${esc(w.def||'（メモなし）')}</div>${w.storyTitle?`<small>${esc(w.storyTitle)}</small>`:''}`:`<div class="a">意味を思い出してから、めくってみましょう。</div>`}
-      <div class="tabs">${reveal?`<button class="chip" type="button" data-q="known">覚えた</button><button class="chip" type="button" data-q="next">まだ</button>`:`<button class="chip" type="button" data-q="flip">めくる</button>`}</div></div>`;
+      <div class="tabs">${reveal?`<button class="chip" type="button" data-q="ok">覚えてた</button><button class="chip" type="button" data-q="ng">まだ</button>`:`<button class="chip" type="button" data-q="flip">めくる</button>`}</div></div>`;
   }
   buildMiss();
   $('#rop').innerHTML = st.opinions.length ? st.opinions.slice().reverse().map(o=>`<div class="item"><b>${esc(o.choice)}</b><span>${esc(o.q)}</span><small>${esc(o.date)}・${esc(o.title)}</small></div>`).join('') : `<p class="empty">話題の最後にある「あなたはどう思う？」を選ぶと、ここに自分の考えがたまっていきます。</p>`;
@@ -1098,12 +1119,13 @@ function renderReview(){
 }
 $('#rcard').addEventListener('click', e => {
   const b = e.target.closest('button'); if(!b) return;
-  const pool = st.words.filter(w=>!w.known); const w = pool[qi % pool.length];
-  if(b.dataset.wq != null && w){ wq[w.term] = +b.dataset.wq; renderReview(); return; }
-  if((b.dataset.q==='next' || b.dataset.q==='known') && w) delete wq[w.term];
+  const {w} = curWord();
+  if(b.dataset.q==='ahead'){ ahead = true; curTerm = null; renderReview(); return; }
+  if(b.dataset.wq != null && w){ const i = +b.dataset.wq, ch = wordChoices(w); wq[w.term] = i; srsAnswer(w, ch && ch[i] === w.def); renderReview(); return; }
   if(b.dataset.q==='flip'){ reveal = true; }
-  if(b.dataset.q==='next'){ qi++; reveal = false; }
-  if(b.dataset.q==='known' && w){ w.known = true; w.knownAt = today(); reveal = false; save(); }
+  if((b.dataset.q==='ok' || b.dataset.q==='ng') && w){ srsAnswer(w, b.dataset.q==='ok'); b.dataset.q = 'next'; }
+  if(b.dataset.q==='known' && w){ w.known = true; w.knownAt = today(); save(); b.dataset.q = 'next'; }
+  if(b.dataset.q==='next'){ if(w) delete wq[w.term]; curTerm = null; reveal = false; }
   renderReview();
 });
 $('#rfol').addEventListener('click', e => { const b = e.target.closest('[data-gs]'); if(!b) return; const [d, id] = b.dataset.gs.split('|'); goStory(d, id); });
