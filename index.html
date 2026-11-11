@@ -316,6 +316,7 @@ body.noscroll{overflow:hidden}
 .yomi{font-size:.75em;font-weight:500;color:var(--muted);margin-left:2px}
 .memo{display:grid;gap:8px;margin:18px 0}.memo h3{margin:0}.memo textarea{font:inherit;font-size:14.5px;width:100%;box-sizing:border-box;border:1.5px solid var(--line);border-radius:12px;padding:10px;background:var(--surface);color:var(--ink);resize:vertical}.memo textarea:focus{border-color:var(--accent);outline:none}.memo .pill{justify-self:start;--rc:var(--accent)}
 .mhd{font-size:13px;color:var(--muted);margin:4px 0 8px}.mhd b{color:var(--accent);font-size:16px}
+.racc{display:grid;gap:6px;margin-bottom:6px}.rrow{display:grid;grid-template-columns:5.5em 1fr 6.5em;align-items:center;gap:8px;font-size:.9rem}.rrow i{height:10px;border-radius:5px;background:var(--line);overflow:hidden}.rrow b{display:block;height:100%;background:var(--accent);border-radius:5px}.rrow[data-r="日本"] b{background:var(--jp)}.rrow[data-r="マレーシア"] b{background:var(--my)}.rrow[data-r="世界"] b{background:var(--world)}.rrow em{font-style:normal;font-weight:700;text-align:right}.rrow em small{font-weight:400;color:var(--muted)}
 .cal{display:grid;gap:6px;max-width:360px}.calh,.calg{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}.calh span{font-size:11px;color:var(--muted);text-align:center}.calg i{aspect-ratio:1;border-radius:6px;display:grid;place-items:center;font-size:11px;font-style:normal;color:var(--muted)}.calg i.l0{background:var(--line)}.calg i.l1{background:color-mix(in srgb,var(--accent) 30%,transparent);color:var(--ink)}.calg i.l2{background:color-mix(in srgb,var(--accent) 60%,transparent);color:#fff}.calg i.l3{background:var(--accent);color:#fff}.calg i.td{outline:2px solid var(--ink);outline-offset:1px}.cal small{color:var(--muted)}
 #wfind{font:inherit;font-size:15px;width:100%;box-sizing:border-box;border:1.5px solid var(--line);border-radius:12px;padding:9px 12px;margin-bottom:10px;background:var(--surface);color:var(--ink)}
 .wsch{font:inherit;font-weight:700;color:inherit;background:none;border:0;padding:0;cursor:pointer;text-align:left;text-decoration:underline dotted var(--accent);text-underline-offset:4px}
@@ -433,6 +434,7 @@ html.fs2 .sh-body,html.fs2 #v-kiso,html.fs2 #wbody,html.fs2 .sh-hero h2{zoom:1.2
     <div class="stats" id="rstats"></div>
     <div id="rcard"></div>
     <div id="rfolw"><h3>🔎 追いかけ中の話</h3><div id="rfol"></div></div>
+    <div id="raccw" hidden><h3>🎯 地域ごとの予想の当たり</h3><div id="racc"></div></div>
     <div><h3>📅 読んだ日カレンダー</h3><div id="rcal"></div></div>
     <div><h3>バッジ</h3><div id="rbadges"></div></div>
     <div><h3>はずれた予想に再挑戦</h3><div class="list" id="rmiss"></div></div>
@@ -1210,8 +1212,20 @@ function calHTML(){
   const lead = (new Date(days[0] + 'T00:00:00').getDay() + 6) % 7, n = days.filter(x => qd[x]).length;
   return `<div class="cal"><div class="calh">${['月','火','水','木','金','土','日'].map(x => `<span>${x}</span>`).join('')}</div><div class="calg">${'<i></i>'.repeat(lead)}${days.map(x => { const c = qd[x]||0, lv = c >= 10 ? 3 : c >= 4 ? 2 : c ? 1 : 0; return `<i class="l${lv}${x === today() ? ' td' : ''}" title="${esc(x)}：${c}問">${+x.slice(8)}</i>`; }).join('')}</div><small>この4週間で ${n}日 予想しました。色が濃いほどたくさん答えた日です。</small></div>`;
 }
+async function renderRegAcc(){
+  const box = $('#racc'); if(!box) return; const by = {};
+  for(const e of editions){ const ed = await getEdition(e.date); if(!ed) continue;
+    (ed.stories||[]).forEach(s => { const a = s.quiz ? st.quiz[e.date+'|'+s.id] : null; if(a == null) return;
+      const r = by[s.region] = by[s.region] || {n:0, ok:0}; r.n++; if(a === s.quiz.answer) r.ok++; }); }
+  const rs = ['日本','マレーシア','世界'].concat(Object.keys(by).filter(r => !['日本','マレーシア','世界'].includes(r))).filter(r => by[r]);
+  if(!rs.length){ $('#raccw').hidden = true; return; }
+  $('#raccw').hidden = false;
+  const pc = r => Math.round(by[r].ok / by[r].n * 100), enough = rs.filter(r => by[r].n >= 3);
+  const lo = enough.length >= 2 ? enough.reduce((a, b) => pc(a) <= pc(b) ? a : b) : null, hi = lo && enough.reduce((a, b) => pc(a) >= pc(b) ? a : b);
+  box.innerHTML = `<div class="racc">${rs.map(r => `<div class="rrow" data-r="${esc(r)}"><span>${esc(r)}</span><i><b style="width:${pc(r)}%"></b></i><em>${pc(r)}%<small>（${by[r].ok}/${by[r].n}）</small></em></div>`).join('')}</div>${lo && hi !== lo && pc(hi) > pc(lo) ? `<small>${esc(hi)}の話がいちばん得意です。${esc(lo)}の話は、背景の「そもそも」を読んでから予想すると当たりやすくなります。</small>` : '<small>予想した話の地域ごとの正解率です。</small>'}`;
+}
 function renderReview(){
-  xferInit(); renderFollows();
+  xferInit(); renderFollows(); renderRegAcc();
   checkBadges(); $('#rbadges').innerHTML = badgesHTML(); $('#rcal').innerHTML = calHTML();
   const w0 = weekAgo();
   const wkWords = st.words.filter(w => (w.savedAt||w.date||'') >= w0);
