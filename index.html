@@ -300,7 +300,7 @@ body.noscroll{overflow:hidden}
 .qopt.right.fresh{animation:okpulse .6s ease-out}
 @keyframes okpulse{0%{transform:scale(1)}40%{transform:scale(1.03)}100%{transform:scale(1)}}
 @media (prefers-reduced-motion: reduce){.burst{animation:none;opacity:0}.qopt.right.fresh{animation:none}}
-.alldone{flex-basis:100%;font-weight:700;color:var(--my)}
+.alldone .pill{--rc:var(--accent);border-radius:12px;text-align:left}.alldone .kisonext{align-self:flex-start;margin:0}.alldone{flex-basis:100%;display:flex;flex-direction:column;gap:6px;padding:12px;border-radius:12px;background:color-mix(in srgb,var(--my) 10%,transparent)}.alldone>b{color:var(--my)}.alldone .dn{display:flex;flex-wrap:wrap;gap:6px;align-items:center}.alldone small{color:var(--muted)}
 .links{display:grid;gap:8px}
 .linkbtn{display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:center;text-align:left;font:inherit;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:8px 12px;cursor:pointer}
 .linkbtn:hover{border-color:var(--rc)}
@@ -567,7 +567,7 @@ function renderFilters(){
     `<button class="chip" type="button" data-r="★" aria-pressed="${filter==='★'}">★ 保存した話題</button>`;
 }
 $('#q').addEventListener('input', e => { qword = e.target.value.trim().toLowerCase(); renderStories(); });
-$('#score').addEventListener('click', e => { const b = e.target.closest('.laterbtn'); if(!b) return; filter = '★'; renderFilters(); renderStories(); });
+$('#score').addEventListener('click', e => { const d = e.target.closest('[data-dopen]'); if(d){ openSheet(d.dataset.dopen); return; } const b = e.target.closest('.laterbtn'); if(!b) return; filter = '★'; renderFilters(); renderStories(); });
 $('#filters').addEventListener('click', e => { const b = e.target.closest('button'); if(!b) return; filter = b.dataset.r; renderFilters(); renderStories(); });
 let sample = null;
 
@@ -656,7 +656,7 @@ function renderStories(){
     $('#top3').innerHTML = `<h3>☀️ 今朝の世界を3行で</h3>${top.map((s,i) => `<button type="button" data-open="${esc(s.id)}"><span class="n">${i+1}</span><span class="e">${esc(s.emoji||'📰')}</span><span class="h">${esc(s.hook||s.title)}</span><small>${c(s)}媒体</small></button>`).join('')}`; }
   $('#score').hidden = !qs.length;
   const later = D.stories.filter(s => isBm(s.id) && (!s.quiz || st.quiz[qkey(s)] == null)).length;
-  $('#score').innerHTML = `<div class="prog" aria-label="今日の進み具合"><div class="pbar"><i style="width:${qs.length ? Math.round(done.length/qs.length*100) : 0}%"></i></div><span>${done.length}／${qs.length}話 予想ずみ</span></div>${later && filter !== '★' ? `<button type="button" class="laterbtn" data-r="★">🔖 あとで読むにした話が ${later} 件あります →</button>` : ''}<b>${ok.length}／${done.length}</b><span>今日の予想の的中（全${qs.length}問）</span><span class="streak">${streakText()}</span><span>追いかけ中の話題 ${st.follows.length}</span><span>あなたの意見 ${st.opinions.length}件</span>${qs.length && done.length === qs.length ? `<span class="alldone">🎉 今日の予想を全部終えました！ 次の号は明日の朝8時に届きます。</span>` : ''}`;
+  $('#score').innerHTML = `<div class="prog" aria-label="今日の進み具合"><div class="pbar"><i style="width:${qs.length ? Math.round(done.length/qs.length*100) : 0}%"></i></div><span>${done.length}／${qs.length}話 予想ずみ</span></div>${later && filter !== '★' ? `<button type="button" class="laterbtn" data-r="★">🔖 あとで読むにした話が ${later} 件あります →</button>` : ''}<b>${ok.length}／${done.length}</b><span>今日の予想の的中（全${qs.length}問）</span><span class="streak">${streakText()}</span><span>追いかけ中の話題 ${st.follows.length}</span><span>あなたの意見 ${st.opinions.length}件</span>${qs.length && done.length === qs.length ? doneHTML(qs, ok) : ''}`;
   if(openId) renderSheet();
 }
 let openId = null, openTerm = null, tileOrder = [], justRight = null;
@@ -789,6 +789,19 @@ async function tellStory(s, b){
   const text = tellText(s) + '\n— ニュース帳より', url = /^https?:/.test(location.href) && !/claude\.ai|claudeusercontent/.test(location.href) ? location.href.split('#')[0] : '';
   try{ if(navigator.share){ await navigator.share(url ? {text, url} : {text}); return; } }catch(e){ if(e && e.name === 'AbortError') return; }
   try{ await navigator.clipboard.writeText(text + (url ? '\n' + url : '')); toastMsg('📋 コピーしました'); }catch(e){ toastMsg('コピーできませんでした'); }
+}
+function doneHTML(qs, ok){
+  const r = ok.length / qs.length, msg = r >= .8 ? 'すごい、ほぼ読み通せています！' : r >= .5 ? 'いい感じ。外れた話こそ覚えやすいです。' : '外れが多い日は、学べることが多い日です。';
+  const ng = qs.filter(s => st.quiz[qkey(s)] !== s.quiz.answer);
+  const kr = (kisoGet()||{}).read || {}, seen = new Set(); let kp = null;
+  if(window.kisoRelated) for(const s of ng.concat(qs)){ const p = (window.kisoRelated(s, 3) || []).find(x => !kr[x.id] && !seen.has(x.id)); if(p){ kp = p; break; } }
+  const fol = D.stories.filter(isFol);
+  return `<div class="alldone"><b>🎉 今日の予想を全部終えました！ ${ok.length}／${qs.length}問 的中</b><span>${msg}</span>
+    ${ng.length ? `<span class="dn">外れた話をもう一度：${ng.slice(0,3).map(s => `<button type="button" class="pill" data-dopen="${esc(s.id)}">${esc(s.emoji||'📰')} ${esc(s.hook||s.title)}</button>`).join('')}</span>` : ''}
+    ${fol.length ? `<span class="dn">追いかけ中の話の続き：${fol.map(s => `<button type="button" class="pill" data-dopen="${esc(s.id)}">${esc(s.emoji||'📰')} ${esc(s.hook||s.title)}</button>`).join('')}</span>` : ''}
+    ${kp ? `<a class="kisonext" href="#kiso-${esc(kp.id)}">📘 仕上げに3分：${esc(kp.emoji)} ${esc(kp.title)} →</a>` : ''}
+    <a class="kisonext" href="#review">🧠 ためた単語を4択でふりかえる →</a>
+    <small>次の号は明日の朝8時（マレーシア時間）に届きます。</small></div>`;
 }
 function nextHTML(s){
   const order = (tileOrder.length ? tileOrder : D.stories.map(x => x.id)).map(id => D.stories.find(x => x.id === id)).filter(Boolean);
@@ -1643,4 +1656,5 @@ if(window.NEWSBOOK_SITE){
 })();
 </script>
 
+<script>try{ if(window.kisoRelated && document.querySelector('.alldone')) renderStories(); }catch(e){}</script>
 </body></html>
