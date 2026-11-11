@@ -922,6 +922,7 @@ function renderSheet(){
       <div class="sec"><h3>どんな立場の媒体が報じた？</h3>${spectrumHTML(s)}<details><summary>それぞれの媒体はどう伝えた？</summary><ul class="angles">${s.angles.map(x => `<li>${applyMarks(esc(x))}</li>`).join('')}</ul></details></div>
       <div class="sec"><h3>出てきたことば（押すと意味）</h3><div class="chips">${s.terms.map(t => `<button class="tchip" type="button" data-term="${esc(t.term)}" aria-expanded="${t.term===openTerm}">${esc(t.term)}</button>`).join('')}</div>
         ${term ? `<div class="tdef"><span><b>${esc(term.term)}</b>　${esc(term.def)}</span><div><button class="btn${hasWord(term.term)?' primary':''}" type="button" data-word="${esc(term.term)}" data-def="${esc(term.def)}" data-story="${esc(s.id)}">${hasWord(term.term)?'単語帳に入っています':'単語帳に入れる'}</button></div></div>` : ''}</div>
+      ${whoHTML(s)}
       <details><summary>各媒体の見出し（${s.headlines.length}件）</summary><ul class="heads">${s.headlines.map(h =>
         `<li><span class="src">${esc(h.outlet)}<i>${esc(h.region)}${h.lean?'・'+esc(h.lean):''}</i></span><a href="${esc(h.link)}" target="_blank" rel="noopener">${esc(h.title)}</a></li>`).join('')}</ul></details>
       ${sample ? `<div class="ask"><h3>Claudeに質問する</h3>
@@ -1342,14 +1343,17 @@ function cardHTML(s, cls){
     ${t && !s.fig && !s.quiz ? `<div class="kt">今日の用語　<b>${esc(t.term)}</b>：${esc(shortText(t.def, 60))}</div>` : ''}
     ${sfootHTML(s)}</div>`;
 }
+function whoHTML(s){
+  const oc = {}, seen = new Set(); (s.headlines||[]).forEach(h => { if(seen.has(h.outlet)) return; seen.add(h.outlet); oc[h.region] = (oc[h.region]||0) + 1; });
+  const ocs = Object.entries(oc).sort((x, y) => y[1] - x[1]), wide = ocs.length;
+  return wide ? `<div class="swho">🗞 <b>${wide >= 4 ? `${wide}つの国・地域で報道` : '報じた国・地域'}</b>${ocs.slice(0, 4).map(([r, n]) => `<span>${esc(r)} ${n}</span>`).join('')}${wide > 4 ? `<span>ほか${wide - 4}</span>` : ''}</div>` : '';
+}
 function sfootHTML(s){
   const a = s.quiz ? st.quiz[qkey(s)] : 0;
   const why = a != null && s.why ? `<div class="swhy"><b>わたしに関係ある？</b>${esc(shortText(s.why, 64))}</div>` : '';
   const kp = a != null && window.kisoRelated ? (window.kisoRelated(s, 1) || [])[0] : null;
   const kc = kp ? `<a class="skiso" href="#kiso-${esc(kp.id)}">📘 そもそも：${esc(kp.emoji)} ${esc(kp.title)} →</a>` : '';
-  const oc = {}, seen = new Set(); (s.headlines||[]).forEach(h => { if(seen.has(h.outlet)) return; seen.add(h.outlet); oc[h.region] = (oc[h.region]||0) + 1; });
-  const ocs = Object.entries(oc).sort((x, y) => y[1] - x[1]), wide = ocs.length;
-  const who = wide ? `<div class="swho">🗞 <b>${wide >= 4 ? `${wide}つの国・地域で報道` : '報じた国・地域'}</b>${ocs.slice(0, 4).map(([r, n]) => `<span>${esc(r)} ${n}</span>`).join('')}${wide > 4 ? `<span>ほか${wide - 4}</span>` : ''}</div>` : '';
+  const who = whoHTML(s);
   return `<div class="sfoot">${who}${why}${kc}<div class="sfl">${s.place ? `<span>📍 ${esc(s.place[0])}</span>` : '<span></span>'}<span class="tapmore">タップで詳しく →</span></div></div>`;
 }
 function swipeQuiz(s){
