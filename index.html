@@ -179,7 +179,7 @@ main.tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr)
 main.tiles.compact{grid-template-columns:1fr;gap:6px}
 .compact .tile{grid-template-columns:auto 1fr;grid-template-areas:"e top" "e hook" "e st";column-gap:12px;row-gap:2px;padding:10px 14px;border-radius:12px}
 .compact .t-emo{grid-area:e;font-size:26px;align-self:center}.compact .t-top{grid-area:top}.compact .t-hook{grid-area:hook;font-size:15px}.compact .t-state{grid-area:st;margin-top:0}
-.compact .t-title,.compact .herolabel{display:none}.compact .tile.hero{grid-column:auto}
+.compact .t-title{display:none}
 body.noscroll{overflow:hidden}
 .sheet{position:fixed;inset:0;z-index:40;background:color-mix(in srgb,var(--ink) 45%,transparent);overflow-y:auto;overscroll-behavior:contain;
   padding:calc(env(safe-area-inset-top,0px) + 24px) max(12px,env(safe-area-inset-right,0px)) calc(env(safe-area-inset-bottom,0px) + 40px) max(12px,env(safe-area-inset-left,0px))}
@@ -261,7 +261,6 @@ body.noscroll{overflow:hidden}
 .tile.hero{grid-column:1/-1;grid-template-columns:auto 1fr;column-gap:18px;padding:18px 20px}
 .tile.hero .t-top,.tile.hero .t-state{grid-column:1/-1}
 .tile.hero .t-emo{font-size:56px;grid-row:2/4;align-self:center}
-main.compact .tile.hero{grid-column:auto;column-gap:12px;padding:10px 14px}main.compact .tile.hero .t-top,main.compact .tile.hero .t-state{grid-column:auto}main.compact .tile.hero .t-emo{font-size:26px;grid-row:auto}
 .tile.hero .t-hook{font-size:clamp(19px,3.4vw,24px)}
 .tile.hero .t-title{grid-column:2}
 .herolabel{background:var(--ink);color:var(--surface);border-radius:999px;padding:0 8px;font-weight:700}
@@ -697,7 +696,7 @@ function renderStories(){ try{ navDue(); }catch(e){}
   if(placeF) list = list.filter(s => s.place && (pgroups[placeF]||[]).includes(s.place[0]));
   const cnt = s => new Set(s.headlines.map(h => h.outlet)).size;
   let hero = null;
-  if(filter !== '★' && filter !== 'すべて' && !placeF && list.length > 2){ hero = list.reduce((a,b) => cnt(b) > cnt(a) ? b : a); list = list.filter(x => x !== hero); }
+  if(!compact && filter !== '★' && filter !== 'すべて' && !placeF && list.length > 2){ hero = list.reduce((a,b) => cnt(b) > cnt(a) ? b : a); list = list.filter(x => x !== hero); }
   list = list.filter(isFol).concat(list.filter(s => !isFol(s)));
   if(unrFirst){ const done = s => s.quiz && st.quiz[qkey(s)] != null; list = list.filter(s => !done(s)).concat(list.filter(done)); }
   if(hero) list.unshift(hero);
