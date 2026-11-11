@@ -300,6 +300,7 @@ body.noscroll{overflow:hidden}
 .qopt.right.fresh{animation:okpulse .6s ease-out}
 @keyframes okpulse{0%{transform:scale(1)}40%{transform:scale(1.03)}100%{transform:scale(1)}}
 @media (prefers-reduced-motion: reduce){.burst{animation:none;opacity:0}.qopt.right.fresh{animation:none}}
+.week{display:grid;gap:12px;margin-bottom:18px}.wkn{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.wkr{display:grid;gap:6px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px}.wkr div{display:grid;grid-template-columns:84px 1fr 40px;gap:8px;align-items:center}.wkr i{height:10px;border-radius:99px;background:var(--rc,var(--accent));min-width:4px}.wkr small{color:var(--muted);text-align:right}.week h3{margin:4px 0 0;font-size:15px}.wfol{justify-self:start;margin-top:4px;--rc:var(--accent)}.wkr i[data-r="日本"]{background:var(--jp)}.wkr i[data-r="マレーシア"]{background:var(--my)}.wkr i[data-r="世界"]{background:var(--world)}
 .alldone .pill{--rc:var(--accent);border-radius:12px;text-align:left}.alldone .kisonext{align-self:flex-start;margin:0}.alldone{flex-basis:100%;display:flex;flex-direction:column;gap:6px;padding:12px;border-radius:12px;background:color-mix(in srgb,var(--my) 10%,transparent)}.alldone>b{color:var(--my)}.alldone .dn{display:flex;flex-wrap:wrap;gap:6px;align-items:center}.alldone small{color:var(--muted)}
 .links{display:grid;gap:8px}
 .linkbtn{display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:center;text-align:left;font:inherit;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:8px 12px;cursor:pointer}
@@ -326,7 +327,7 @@ body.noscroll{overflow:hidden}
 :focus-visible{outline:2.5px solid var(--accent);outline-offset:2px}
 .tile.q-ok{box-shadow:inset 4px 0 0 var(--my)}.tile.q-ng{box-shadow:inset 4px 0 0 var(--jp)}.tile.q-ok,.tile.q-ng{opacity:.85}
 .aemo{font-size:18px;letter-spacing:2px;line-height:1.5}
-.fol{display:grid;gap:4px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:8px}.fol b{font-size:14.5px}.fol .gostory{text-align:left;font:inherit;font-size:13px;color:var(--accent);background:none;border:0;padding:3px 0;cursor:pointer}
+.folc{display:grid;gap:4px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:8px}.folc b{font-size:14.5px}.folc .gostory{text-align:left;font:inherit;font-size:13px;color:var(--accent);background:none;border:0;padding:3px 0;cursor:pointer}
 .shbar{position:fixed;top:0;left:50%;transform:translate(-50%,-110%);width:min(720px,100%);box-sizing:border-box;z-index:45;display:flex;align-items:center;gap:10px;padding:calc(8px + env(safe-area-inset-top,0px)) 14px 8px;background:var(--surface);border-bottom:1px solid var(--line);box-shadow:0 4px 14px rgba(0,0,0,.12);transition:transform .2s;cursor:pointer}
 .shbar.on{transform:translate(-50%,0)}.shbar span{flex:1;font-weight:700;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.shbar button{flex:none;width:30px;height:30px;border-radius:50%;border:1px solid var(--line);background:var(--surface);color:var(--ink);font-size:18px;cursor:pointer}
 .toprow{display:flex;justify-content:space-between;align-items:center;gap:8px}
@@ -431,6 +432,7 @@ html.fs2 .sh-body,html.fs2 #v-kiso,html.fs2 #wbody,html.fs2 .sh-hero h2{zoom:1.2
   </section>
 
   <section id="v-archive" class="view" hidden>
+    <div id="week"></div>
     <h2>過去の号</h2>
     <div class="archive" id="arch"></div>
   </section>
@@ -1063,7 +1065,7 @@ async function renderFollows(){
   for(const e of editions){ const ed = await getEdition(e.date); if(!ed) continue;
     (ed.stories||[]).forEach(x => { if(by[x.thread]) by[x.thread].push({date:e.date, id:x.id, title:x.title, emoji:x.emoji}); }); }
   box.innerHTML = st.follows.map(f => { const xs = by[f].sort((a,b) => b.date.localeCompare(a.date)); if(!xs.length) return '';
-    return `<div class="fol"><b>${esc(xs[0].emoji||'📰')} ${xs.length}つの号に登場</b>${xs.map((x,i) => `<button type="button" class="gostory" data-gs="${esc(x.date)}|${esc(x.id)}">${esc(x.date.replace(/-/g,'.'))}${i===0?'（最新）':''}　${esc(x.title)} →</button>`).join('')}</div>`; }).join('') || '<p class="empty">追いかけている話の記事が見つかりませんでした。</p>';
+    return `<div class="folc"><b>${esc(xs[0].emoji||'📰')} ${xs.length}つの号に登場</b>${xs.map((x,i) => `<button type="button" class="gostory" data-gs="${esc(x.date)}|${esc(x.id)}">${esc(x.date.replace(/-/g,'.'))}${i===0?'（最新）':''}　${esc(x.title)} →</button>`).join('')}</div>`; }).join('') || '<p class="empty">追いかけている話の記事が見つかりませんでした。</p>';
 }
 function renderReview(){
   xferInit(); renderFollows();
@@ -1108,7 +1110,28 @@ $('#rfol').addEventListener('click', e => { const b = e.target.closest('[data-gs
 $('#rbm').addEventListener('click', e => { const a=e.target.closest('a'); if(a && a.dataset.go) openEdition(a.dataset.go); });
 
 /* ---------- 過去の号 ---------- */
+async function renderWeek(){
+  const box = $('#week'); if(!box || !editions.length) return;
+  const w0 = weekAgo(), eds = editions.filter(e => e.date > w0);
+  if(!eds.length){ box.innerHTML = ''; return; }
+  const all = [];
+  for(const e of eds){ const ed = await getEdition(e.date); if(ed) (ed.stories||[]).forEach(s => all.push(Object.assign({date: e.date}, s))); }
+  const reg = {}; all.forEach(s => reg[s.region] = (reg[s.region]||0) + 1);
+  const qd = all.filter(s => s.quiz && st.quiz[s.date+'|'+s.id] != null), ok = qd.filter(s => st.quiz[s.date+'|'+s.id] === s.quiz.answer);
+  const th = {}; all.forEach(s => { if(s.thread) (th[s.thread] = th[s.thread] || []).push(s); });
+  const cont = Object.entries(th).filter(([k, xs]) => new Set(xs.map(x => x.date)).size >= 2).sort((a, b) => b[1].length - a[1].length).slice(0, 5);
+  const mx = Math.max(1, ...Object.values(reg));
+  box.innerHTML = `<h2>📅 この1週間のまとめ</h2><div class="week">
+    <div class="wkn"><div class="stat"><b>${eds.length}</b><span>届いた号</span></div><div class="stat"><b>${all.length}</b><span>話題</span></div><div class="stat"><b>${qd.length ? ok.length + '/' + qd.length : '—'}</b><span>あなたの予想の的中</span></div></div>
+    <div class="wkr">${Object.entries(reg).sort((a, b) => b[1] - a[1]).map(([r, n]) => `<div><span class="reg" data-r="${esc(r)}">${esc(r)}</span><i style="width:${Math.round(n / mx * 100)}%" data-r="${esc(r)}"></i><small>${n}話</small></div>`).join('')}</div>
+    ${cont.length ? `<h3>🧵 何日も続いている話</h3>${cont.map(([k, xs]) => { xs.sort((a, b) => a.date.localeCompare(b.date)); const f = st.follows.includes(k);
+      return `<div class="folc"><b>${esc(xs[xs.length-1].emoji||'📰')} ${new Set(xs.map(x => x.date)).size}日にわたって登場${f ? '　<small>追いかけ中</small>' : ''}</b>${xs.map(x => `<button type="button" class="gostory" data-gs="${esc(x.date)}|${esc(x.id)}">${esc(x.date.slice(5).replace('-','/'))}　${esc(x.title)} →</button>`).join('')}${f ? '' : `<button type="button" class="pill wfol" data-wfol="${esc(k)}">＋ この話を追いかける</button>`}</div>`; }).join('')}` : '<p class="empty">号が増えると、何日も続いている話がここにつながって見えます。</p>'}
+  </div>`;
+}
+$('#week').addEventListener('click', e => { const g = e.target.closest('[data-gs]'); if(g){ const [d, id] = g.dataset.gs.split('|'); goStory(d, id); return; }
+  const f = e.target.closest('[data-wfol]'); if(f){ if(!st.follows.includes(f.dataset.wfol)) st.follows = st.follows.concat(f.dataset.wfol); save(); toastMsg('＋ 追いかけ中に入れました'); renderWeek(); } });
 function renderArchive(){
+  renderWeek();
   $('#arch').innerHTML = editions.map(e => { const n = Object.keys(st.quiz).filter(k => k.startsWith(e.date+'|')).length;
     return `<a href="#today" data-go="${esc(e.date)}"><small>${esc(e.date.replace(/-/g,'.'))}・${e.count}話題</small>${e.emojis?`<span class="aemo">${esc(e.emojis)}</span>`:''}${(e.titles||[]).map(t=>`<span>${esc(t)}</span>`).join('')}<span class="myq">${n ? `予想した話 ${n}／${e.count}` : 'まだ予想していません →'}</span><span class="pbar"><i style="width:${Math.round(n/Math.max(1,e.count)*100)}%"></i></span></a>`; }).join('');
 }
