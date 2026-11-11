@@ -1560,6 +1560,15 @@ ruby rt{font-size:.55em;color:var(--muted);font-weight:400}
 .kwatch ul{margin:0;padding:0;list-style:none;display:grid;gap:6px}
 .kwatch li{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:6px 12px;font-size:14px;font-weight:700}
 .kwatch li::before{content:"🔍 "}
+.kflip{display:grid;gap:10px;text-align:center;font:inherit;color:var(--ink);cursor:pointer;background:var(--surface);border:2px solid var(--k);border-radius:18px;padding:28px 18px;min-height:240px;align-content:center}
+.kflip .ke{font-size:48px;line-height:1}
+.kflip b{font-family:var(--f-display);font-size:20px}
+.kflip small{color:var(--muted);font-size:13px}
+.kflip ol{text-align:left;margin:0;padding-left:1.3em;display:grid;gap:8px;font-size:15px;font-weight:700;line-height:1.6}
+.kcbtns{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.kcbtns button{font:inherit;font-weight:700;font-size:15px;border-radius:12px;padding:12px;cursor:pointer;border:1.5px solid var(--line);background:var(--surface);color:var(--ink)}
+.kcbtns button:first-child{border-color:var(--my);background:color-mix(in srgb,var(--my) 14%,var(--surface))}
+.kcbtns button:last-child{border-color:var(--jp);background:color-mix(in srgb,var(--jp) 10%,var(--surface))}
 /* 詳細 */
 .kd{display:grid;gap:18px}
 .kback{justify-self:start;font:inherit;font-size:13px;font-weight:700;color:var(--accent);background:none;border:0;padding:4px 0;cursor:pointer}
@@ -1726,6 +1735,7 @@ ruby rt{font-size:.55em;color:var(--muted);font-weight:400}
       <p class="kiso-lede">ニュースが「ふーん」で終わらないための、世界の“前提知識”。1つ3分、図で読めます。</p>
       ${(() => { const c1 = (K.courses && K.courses[0] ? K.courses[0].ids : []).map(id => byId[id]); const pk = todayP.find(p => !ks.read[p.id]) || c1.find(p => p && !ks.read[p.id]) || P.find(p => !ks.read[p.id]); if(!pk) return '';
         return `<button type="button" class="kpick k-${e(pk.group)}" data-kiso="${e(pk.id)}"><small>${todayP.includes(pk) ? '📌 今日のニュースを読む前に、まずこれ' : '🌱 次に読むならこれ'}</small><b>${e(pk.emoji)} ${e(pk.title)}</b><p>${e(pk.one)}</p>${pk.key ? `<ul>${pk.key.map(t => `<li>${e(t)}</li>`).join('')}</ul>` : ''}<span>3分で読む →</span></button>`; })()}
+      <button type="button" class="kchip" data-kcards="1" style="justify-self:start;font-size:14px;padding:8px 16px">🃏 おさらいカード（${Math.max(P.filter(p => ks.read[p.id]).length, 0) || 'はじめの5講座'}${P.some(p => ks.read[p.id]) ? '枚' : ''}）</button>
       <button type="button" class="kchip" data-kquiz="1" style="justify-self:start;font-size:14px;padding:8px 16px">🧠 講座クイズで腕だめし（${P.length}問）</button>
       <div class="kiso-prog"><b>${P.length}講座のうち ${done} 講座を読みました${done === P.length ? ' 🎉' : ''}</b><div class="kiso-bar"><i style="width:${done / P.length * 100}%"></i></div></div>
       ${todayP.length ? `<div class="kiso-grp"><h3>📌 今日のニュースを読むなら <small>まずはこの5つから</small></h3><div class="kchips">${todayP.map(p => `<button type="button" class="kchip k-${e(p.group)}" data-kiso="${e(p.id)}">${e(p.emoji)} ${e(p.title)}${ks.read[p.id] ? ' ✓' : ''}</button>`).join('')}</div></div>` : ''}
@@ -1807,7 +1817,27 @@ ruby rt{font-size:.55em;color:var(--muted);font-weight:400}
       if(frag){ frag.append(t.slice(last)); n.replaceWith(frag); }
     }
   }
-  window.renderKiso = function(){ if(cur === '__quiz') return quizView(); const p = cur && byId[cur]; if(p) detailR(p); else list(); };
+  let kc = null; // {id, flip}
+  function cardPool(){ const r = P.filter(p => ks.read[p.id]); return r.length ? r : ((K.courses && K.courses[0]) ? K.courses[0].ids.map(id => byId[id]).filter(Boolean) : P.slice(0, 5)); }
+  function nextCard(){
+    ks.cards = ks.cards || {};
+    const pool = cardPool().filter(p => !kc || p.id !== kc.id || cardPool().length === 1);
+    const w = p => { const c = ks.cards[p.id] || {ok: 0, ng: 0}; return 1 + c.ng * 2 - Math.min(c.ok, 3) * 0.25; };
+    const tot = pool.reduce((a, p) => a + Math.max(w(p), .2), 0); let r = Math.random() * tot, pick = pool[0];
+    for(const p of pool){ r -= Math.max(w(p), .2); if(r <= 0){ pick = p; break; } }
+    kc = {id: pick.id, flip: false};
+  }
+  function cardsView(){
+    if(!kc) nextCard();
+    const p = byId[kc.id], n = cardPool().length;
+    sec.className = 'view k-' + p.group;
+    sec.innerHTML = `<div class="kd"><button type="button" class="kback" data-kiso="">← 講座の一覧</button>
+      <div class="kiso-prog"><b>🃏 おさらいカード（${n}枚）</b><small style="color:var(--muted)">${P.some(x => ks.read[x.id]) ? '「読んだ」講座から出ます。あやしいカードほどよく出ます。' : 'まだ読んだ講座がないので、「はじめの一歩」の5講座から出ます。'}</small></div>
+      <button type="button" class="kflip" data-kflip="1">${kc.flip ? `<b>${e(p.emoji)} ${e(p.title)}</b><ol>${(p.key || []).map(t => `<li>${e(t)}</li>`).join('')}</ol>` : `<span class="ke">${e(p.emoji)}</span><b>${e(p.title)}</b><small>大事なポイント3つ、言えるかな？<br>タップでめくる</small>`}</button>
+      ${kc.flip ? `<div class="kcbtns"><button type="button" data-kcard="ok">⭕ 覚えてた</button><button type="button" data-kcard="ng">🤔 あやしい</button></div><button type="button" class="kchip k-${e(p.group)}" data-kiso="${e(p.id)}" style="justify-self:start">${e(p.emoji)} この講座を読み直す</button>` : ''}
+    </div>`;
+  }
+  window.renderKiso = function(){ if(cur === '__quiz') return quizView(); if(cur === '__cards') return cardsView(); const p = cur && byId[cur]; if(p) detailR(p); else list(); };
   function detailR(p){ detail(p); try { addRuby(sec.querySelector('.kd')); } catch(_) {} }
   function open(id){ cur = id || null; window.renderKiso(); scrollTo(0, 0); }
 
@@ -1815,6 +1845,9 @@ ruby rt{font-size:.55em;color:var(--muted);font-weight:400}
     const t = ev.target.closest('button,a'); if(!t) return;
     if(t.dataset.kiso != null){ open(t.dataset.kiso); return; }
     if(t.dataset.kquiz){ qz = null; open('__quiz'); return; }
+    if(t.dataset.kcards){ kc = null; open('__cards'); return; }
+    if(t.dataset.kflip){ kc.flip = !kc.flip; cardsView(); return; }
+    if(t.dataset.kcard){ ks.cards = ks.cards || {}; const c = ks.cards[kc.id] = ks.cards[kc.id] || {ok: 0, ng: 0}; c[t.dataset.kcard]++; keep(); nextCard(); cardsView(); return; }
     if(t.dataset.kqq != null && qz && qz.pick == null){ qz.pick = +t.dataset.kqq; ks.quiz[qz.id] = qz.pick; keep(); quizView(); return; }
     if(t.dataset.kqn){ nextQuiz(); quizView(); scrollTo(0, 0); return; }
     const p = byId[cur]; if(!p) return;
