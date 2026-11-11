@@ -311,6 +311,7 @@ body.noscroll{overflow:hidden}
 .pastop{font-size:13px;line-height:1.7;background:var(--accent-soft);border-radius:10px;padding:8px 10px;margin:8px 0}
 .say3{font:inherit;font-size:12px;font-weight:700;margin-left:6px;border:1.5px solid var(--accent);color:var(--accent);background:var(--surface);border-radius:99px;padding:2px 10px;cursor:pointer;vertical-align:middle}
 .wkmap{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px}#wpl{display:grid;gap:4px;margin-top:8px;font-size:13px}#wpl small{color:var(--muted)}
+.cont{display:grid;gap:6px;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:12px 14px;margin-bottom:12px}.cont h3{margin:0 0 2px;font-size:15px}.cont button{display:flex;gap:10px;align-items:flex-start;text-align:left;font:inherit;color:var(--ink);background:none;border:0;border-top:1px dashed var(--line);padding:8px 0 4px;cursor:pointer}.cont h3+button{border-top:0}.cont details{display:grid;gap:6px}.cont summary{cursor:pointer;color:var(--accent);font-size:13px;font-weight:700;padding:6px 0}.cont .e{font-size:20px}.cont b{display:block;font-size:14px;line-height:1.5}.cont small{display:block;color:var(--muted);font-size:12px;line-height:1.5}
 .srsd{letter-spacing:2px;color:var(--accent)}
 .alldone .pill{--rc:var(--accent);border-radius:12px;text-align:left}.alldone .kisonext{align-self:flex-start;margin:0}.alldone{flex-basis:100%;display:flex;flex-direction:column;gap:6px;padding:12px;border-radius:12px;background:color-mix(in srgb,var(--my) 10%,transparent)}.alldone>b{color:var(--my)}.alldone .dn{display:flex;flex-wrap:wrap;gap:6px;align-items:center}.alldone small{color:var(--muted)}
 .links{display:grid;gap:8px}
@@ -393,6 +394,7 @@ html.fs2 .sh-body,html.fs2 #v-kiso,html.fs2 #wbody,html.fs2 .sh-hero h2{zoom:1.2
     <nav class="filters" aria-label="地域で絞り込む" id="filters"></nav>
     <input type="search" id="q" class="qbox" placeholder="🔍 言葉でさがす（例：金利、ナジブ、AI）" aria-label="話題を言葉でさがす">
     <div class="top3" id="top3"></div>
+    <div class="cont" id="cont" hidden></div>
     <div class="score" id="score"></div>
     <div class="wmap" id="wmap" hidden></div>
     <main id="stories" class="tiles"></main>
@@ -684,6 +686,7 @@ function renderStories(){
   { const c = s => new Set(s.headlines.map(h => h.outlet)).size, top = D.stories.slice().sort((a,b) => c(b) - c(a)).slice(0, 3);
     $('#top3').hidden = !!(qword || filter !== 'すべて');
     top3ids = top.map(s => s.id); $('#top3').innerHTML = `<h3>☀️ 今朝の世界を3行で <button type="button" class="say3" data-say3="1" aria-pressed="${speaking==='top3'}">${speaking==='top3' ? '⏹ とめる' : '🔊 聞く（30秒）'}</button></h3>${top.map((s,i) => `<button type="button" data-open="${esc(s.id)}"><span class="n">${i+1}</span><span class="e">${esc(s.emoji||'📰')}</span><span class="h">${esc(s.hook||s.title)}</span><small>${c(s)}媒体</small></button>`).join('')}`; }
+  renderCont();
   $('#score').hidden = !qs.length;
   const later = D.stories.filter(s => isBm(s.id) && (!s.quiz || st.quiz[qkey(s)] == null)).length;
   $('#score').innerHTML = `<div class="prog" aria-label="今日の進み具合"><div class="pbar"><i style="width:${qs.length ? Math.round(done.length/qs.length*100) : 0}%"></i></div><span>${done.length}／${qs.length}話 予想ずみ</span></div>${later && filter !== '★' ? `<button type="button" class="laterbtn" data-r="★">🔖 あとで読むにした話が ${later} 件あります →</button>` : ''}<b>${ok.length}／${done.length}</b><span>今日の予想の的中（全${qs.length}問）</span><span class="streak">${streakText()}</span><span>追いかけ中の話題 ${st.follows.length}</span><span>あなたの意見 ${st.opinions.length}件</span>${qs.length && done.length === qs.length ? doneHTML(qs, ok) : ''}`;
@@ -897,6 +900,22 @@ function renderSheet(){
     </div></article>`;
   if(answered) loadThread(s);
 }
+var contFor = null;
+async function renderCont(){
+  const box = $('#cont'); if(!box) return;
+  if(qword || filter !== 'すべて'){ box.hidden = true; return; }
+  if(contFor === D.date){ box.hidden = !box.innerHTML; return; }
+  box.innerHTML = ''; box.hidden = true;
+  const prev = editions.map(e => e.date).filter(d => d < D.date).sort().pop(); if(!prev) return;
+  contFor = D.date;
+  const me = D.date, ed = await getEdition(prev); if(!ed || D.date !== me) return;
+  const pm = {}; (ed.stories||[]).forEach(s => { if(s.thread && !pm[s.thread]) pm[s.thread] = s; });
+  const xs = D.stories.filter(s => s.thread && pm[s.thread]); if(!xs.length) return;
+  const row = s => `<button type="button" data-copen="${esc(s.id)}"><span class="e">${esc(s.emoji||'📰')}</span><span><b>${esc(s.hook||s.title)}</b><small>前回：${esc(pm[s.thread].title)}</small></span></button>`;
+  box.innerHTML = `<h3>🧵 前の号（${esc(prev.slice(5).replace('-','/'))}）からの続き</h3>${xs.slice(0, 3).map(row).join('')}${xs.length > 3 ? `<details><summary>ほかにも ${xs.length - 3}本 続いています</summary>${xs.slice(3).map(row).join('')}</details>` : ''}`;
+  box.hidden = !!(qword || filter !== 'すべて');
+}
+$('#cont').addEventListener('click', e => { const b = e.target.closest('[data-copen]'); if(b) openSheet(b.dataset.copen); });
 var top3ids = [];
 function sayTop3(b){
   try{
@@ -1358,7 +1377,7 @@ if(window.NEWSBOOK_SITE){
   fetch('editions/index.json', {cache:'no-cache'}).then(r => r.ok ? r.json() : null).then(j => {
     const list = (j && j.editions || []).slice().sort((a,b)=> b.date.localeCompare(a.date));
     if(!list.length) return;
-    editions = list; renderEditionSelect(); if(!$('#v-archive').hidden) renderArchive(); if(!$('#v-review').hidden) renderFollows();
+    editions = list; renderEditionSelect(); renderCont(); if(!$('#v-archive').hidden) renderArchive(); if(!$('#v-review').hidden) renderFollows();
     if(list[0].date !== D.date) openEdition(list[0].date);
   }).catch(() => {});
 }
@@ -1433,7 +1452,7 @@ if(window.NEWSBOOK_SITE){
     const list = (snap.data().editions || []).slice().sort((a,b)=> b.date.localeCompare(a.date));
     if(!list.length) return;
     const wasLatest = D.date === editions[0].date;
-    editions = list; renderEditionSelect(); if(!$('#v-archive').hidden) renderArchive(); if(!$('#v-review').hidden) renderFollows();
+    editions = list; renderEditionSelect(); renderCont(); if(!$('#v-archive').hidden) renderArchive(); if(!$('#v-review').hidden) renderFollows();
     if(wasLatest && list[0].date !== D.date) openEdition(list[0].date);
   }, () => {});
   const uid = userNs ? await userNs.id() : null;
