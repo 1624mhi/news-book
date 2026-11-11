@@ -663,11 +663,12 @@ function streak(){
   return {n, today: days.has(today())};
 }
 function streakText(){ const k = streak(); return k.n ? `🔥 ${k.n}日連続で予想中${k.today?'':'（今日も答えると'+(k.n+1)+'日）'}` : '🔥 予想を1問答えると連続記録がはじまります'; }
+const readMin = s => Math.max(1, Math.round([...(s.points||[]), s.background||'', s.why||''].join('').length / 300 + 0.5));
 function tileHTML(s, hero){
   const n = new Set(s.headlines.map(h => h.outlet)).size, a = st.quiz[qkey(s)];
   const state = !s.quiz ? '読む →' : a==null ? '予想してから読む →' : (a===s.quiz.answer ? '◎ 予想的中' : '△ 予想はずれ');
   return `<button class="tile${hero?' hero':''}${a==null?'':(s.quiz && a===s.quiz.answer?' q-ok':' q-ng')}" type="button" data-open="${esc(s.id)}" data-r="${esc(s.region)}">
-    <span class="t-top">${hero?'<span class="herolabel">今日いちばん報じられた話</span>':''}<span class="reg">${esc(s.region)}</span>${isFol(s)?'<span class="fol">追いかけ中</span>':''}${isBm(s.id)?'<span>★</span>':''}<span class="t-n">${n}媒体</span></span>
+    <span class="t-top">${hero?'<span class="herolabel">今日いちばん報じられた話</span>':''}<span class="reg">${esc(s.region)}</span>${isFol(s)?'<span class="fol">追いかけ中</span>':''}${isBm(s.id)?'<span>🔖</span>':''}<span class="t-n">${n}媒体・約${readMin(s)}分</span></span>
     <span class="t-emo" aria-hidden="true">${esc(s.emoji||'📰')}</span>
     <span class="t-hook">${esc(s.hook||s.title)}</span>${s.hook?`<span class="t-title">${esc(s.title)}</span>`:''}
     <span class="t-state${a!=null?' done':''}">${state}</span></button>`;
