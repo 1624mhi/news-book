@@ -698,12 +698,17 @@ function renderStories(){ try{ navDue(); }catch(e){}
   if(openId) renderSheet();
 }
 let openId = null, openTerm = null, tileOrder = [], justRight = null;
+function spGet(){ try{ return JSON.parse(localStorage.getItem('newsbook-spos') || '{}'); }catch(e){ return {}; } }
+function spSave(){ if(!openId) return; try{ const o = spGet(), k = D.date + '|' + openId, y = $('#sheet').scrollTop, el = $('#sheet');
+  if(y > 400 && y < el.scrollHeight - el.clientHeight - 200) o[k] = y; else delete o[k];
+  const ks = Object.keys(o); if(ks.length > 40) delete o[ks[0]]; localStorage.setItem('newsbook-spos', JSON.stringify(o)); }catch(e){} }
 function openSheet(id){
   try{ if(speaking && speaking !== id && speaking !== 'top3'){ speechSynthesis.cancel(); speaking = null; } }catch(e){}
-  openId = id; openTerm = null; renderSheet(); $('#sheet').hidden = false; $('#sheet').scrollTop = 0;
+  openId = id; openTerm = null; renderSheet(); $('#sheet').hidden = false;
+  const sp = spGet()[D.date + '|' + id] || 0; $('#sheet').scrollTop = sp; if(sp > 400) toastMsg('📖 前に読んでいた所から');
   document.body.classList.add('noscroll'); const x = $('#sheet .x'); if(x) x.focus({preventScroll:true});
 }
-function closeSheet(){ try{ if(speaking && speaking !== 'top3'){ speechSynthesis.cancel(); speaking = null; } }catch(e){} openId = null; $('#shbar').classList.remove('on'); $('#sheet').hidden = true; document.body.classList.remove('noscroll'); }
+function closeSheet(){ spSave(); try{ if(speaking && speaking !== 'top3'){ speechSynthesis.cancel(); speaking = null; } }catch(e){} openId = null; $('#shbar').classList.remove('on'); $('#sheet').hidden = true; document.body.classList.remove('noscroll'); }
 $('#sheet').addEventListener('click', e => { if(e.target.id === 'sheet') closeSheet(); });
 $('#sheet').addEventListener('scroll', () => { $('#shbar').classList.toggle('on', $('#sheet').scrollTop > 320); }, {passive:true});
 $('#shbar').addEventListener('click', e => { if(e.target.closest('[data-close]')) closeSheet(); else $('#sheet').scrollTo({top:0, behavior:'smooth'}); });
