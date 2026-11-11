@@ -435,6 +435,7 @@ const BADGES = [
   ['marks5','🖍','マーカー名人','マーカーを5か所引く'],
   ['op5','💬','自分の意見','「あなたはどう思う？」に5回答える'],
   ['fol3','🔎','追いかける人','3つの話題を追いかける'],
+  ['kiso5','📘','そもそも博士','そもそも講座を5つ読む'],
 ];
 function earnedBadges(){
   st.hits = st.hits || []; st.regs = st.regs || [];
@@ -445,7 +446,8 @@ function earnedBadges(){
   const ok = {first: Object.keys(st.quiz).length >= 1, s3: k >= 3, s7: k >= 7,
     all: qs.length > 0 && qs.every(s => st.quiz[qkey(s)] != null), hit10: st.hits.length >= 10,
     world: ['日本','マレーシア','世界'].every(r => st.regs.includes(r)), words10: st.words.length >= 10,
-    marks5: st.marks.length >= 5, op5: st.opinions.length >= 5, fol3: st.follows.length >= 3};
+    marks5: st.marks.length >= 5, op5: st.opinions.length >= 5, fol3: st.follows.length >= 3,
+    kiso5: (() => { try{ return Object.keys((JSON.parse(localStorage.getItem('newsbook-kiso-v1')||'{}').read)||{}).length >= 5; }catch(e){ return false; } })()};
   return BADGES.filter(b => ok[b[0]]).map(b => b[0]);
 }
 let badgeReady = false;
@@ -1398,10 +1400,10 @@ if(window.NEWSBOOK_SITE){
   }
   let qz = null; // {id, pick}
   function nextQuiz(){
-    const wrong = P.filter(p => ks.quiz[p.id] != null && ks.quiz[p.id] !== p.quiz.a), fresh = P.filter(p => ks.quiz[p.id] == null);
-    const pool = wrong.length && Math.random() < .5 ? wrong : (fresh.length ? fresh : P);
-    let p = pool[Math.floor(Math.random() * pool.length)];
-    if(qz && pool.length > 1 && p.id === qz.id) p = pool[(pool.indexOf(p) + 1) % pool.length];
+    const prev = qz && qz.id, Q = P.filter(p => p.id !== prev);
+    const wrong = Q.filter(p => ks.quiz[p.id] != null && ks.quiz[p.id] !== p.quiz.a), fresh = Q.filter(p => ks.quiz[p.id] == null);
+    const pool = wrong.length && Math.random() < .4 ? wrong : (fresh.length ? fresh : Q);
+    const p = pool[Math.floor(Math.random() * pool.length)];
     qz = {id: p.id, pick: null};
   }
   function quizView(){
