@@ -1018,6 +1018,7 @@ $('#wbody').addEventListener('click', e => {
   if(b.dataset.wed){ wedit = +b.dataset.wed; renderWords(); const ta = $('#wed-in'); if(ta){ ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); } return; }
   if(b.dataset.wexp){ const q = s => '"' + String(s||'').replace(/"/g,'""') + '"';
     const csv = '\ufeff' + st.words.map(w => [w.term, w.def, w.storyTitle||'', w.date||''].map(q).join(',')).join('\n');
+    if(!window.NEWSBOOK_SITE){ navigator.clipboard.writeText(csv).then(() => toastMsg('📋 CSVをコピーしました'), () => toastMsg('コピーできませんでした')); return; }
     try{ const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv'})); a.download = 'newsbook-words-' + today() + '.csv'; document.body.appendChild(a); a.click(); a.remove(); toastMsg('📤 ' + st.words.length + '語を書き出しました'); }
     catch(e){ try{ navigator.clipboard.writeText(csv); toastMsg('📋 コピーしました'); }catch(_){ toastMsg('書き出せませんでした'); } }
     return; }
