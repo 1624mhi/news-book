@@ -315,6 +315,7 @@ body.noscroll{overflow:hidden}
 #keyhelp{position:fixed;inset:0;z-index:95;background:rgba(0,0,0,.35);display:grid;place-items:center}#keyhelp>div{background:var(--surface);color:var(--ink);border-radius:16px;padding:18px 22px;min-width:260px;box-shadow:0 20px 60px rgba(0,0,0,.3)}#keyhelp dl{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;margin:12px 0}#keyhelp dt{font-family:ui-monospace,monospace;font-weight:700;background:var(--accent-soft);border-radius:6px;padding:0 8px;text-align:center}#keyhelp dd{margin:0}#keyhelp small{color:var(--muted)}
 .yomi{font-size:.75em;font-weight:500;color:var(--muted);margin-left:2px}
 .memo{display:grid;gap:8px;margin:18px 0}.memo h3{margin:0}.memo textarea{font:inherit;font-size:14.5px;width:100%;box-sizing:border-box;border:1.5px solid var(--line);border-radius:12px;padding:10px;background:var(--surface);color:var(--ink);resize:vertical}.memo textarea:focus{border-color:var(--accent);outline:none}.memo .pill{justify-self:start;--rc:var(--accent)}
+.mhd{font-size:13px;color:var(--muted);margin:4px 0 8px}.mhd b{color:var(--accent);font-size:16px}
 .srsd{letter-spacing:2px;color:var(--accent)}
 .alldone .pill{--rc:var(--accent);border-radius:12px;text-align:left}.alldone .kisonext{align-self:flex-start;margin:0}.alldone{flex-basis:100%;display:flex;flex-direction:column;gap:6px;padding:12px;border-radius:12px;background:color-mix(in srgb,var(--my) 10%,transparent)}.alldone>b{color:var(--my)}.alldone .dn{display:flex;flex-wrap:wrap;gap:6px;align-items:center}.alldone small{color:var(--muted)}
 .links{display:grid;gap:8px}
@@ -529,7 +530,7 @@ function mergeState(a, b){
     quiz: Object.assign({}, a.quiz, b.quiz),
     opinions: by(a.opinions, b.opinions, o => o.date + '|' + o.id),
     follows: [...new Set((a.follows||[]).concat(b.follows||[]))],
-    quizDays: Object.assign({}, a.quizDays, b.quizDays),
+    quizDays: Object.assign({}, a.quizDays, b.quizDays), fixed: Object.assign({}, a.fixed, b.fixed),
     badges: [...new Set((a.badges||[]).concat(b.badges||[]))],
     hits: [...new Set((a.hits||[]).concat(b.hits||[]))],
     regs: [...new Set((a.regs||[]).concat(b.regs||[]))],
@@ -1131,15 +1132,17 @@ function weekAgo(){ const d = new Date(); d.setDate(d.getDate()-7); return d.toL
 const retry = {};
 async function buildMiss(){
   const eds = await allEditions(), miss = [];
-  eds.forEach(ed => (ed.stories||[]).forEach(s => { const a = st.quiz[ed.date+'|'+s.id]; if(s.quiz && a != null && a !== s.quiz.answer) miss.push({ed, s, k:ed.date+'|'+s.id}); }));
+  eds.forEach(ed => (ed.stories||[]).forEach(s => { const a = st.quiz[ed.date+'|'+s.id]; if(s.quiz && a != null && a !== s.quiz.answer && (!(st.fixed||{})[ed.date+'|'+s.id] || retry[ed.date+'|'+s.id] != null)) miss.push({ed, s, k:ed.date+'|'+s.id}); }));
+  const left = miss.filter(m => retry[m.k] == null).length, shown = miss.slice(0, 5);
   if($('#v-review').hidden) return;
-  $('#rmiss').innerHTML = miss.length ? miss.map(({ed,s,k}) => { const r = retry[k];
+  $('#rmiss').innerHTML = miss.length ? `<p class="mhd">まちがえた問題 あと<b>${left}</b>問。正解すると、このリストから消えていきます。</p>` + shown.map(({ed,s,k}) => { const r = retry[k];
     return `<div class="miss"><small>${esc(ed.date)}・${esc(s.title)}</small><span class="q">${esc(s.quiz.q)}</span>
       <div class="qopts">${s.quiz.choices.map((c,i) => `<button class="qopt${r!=null && i===s.quiz.answer?' right':''}${r===i && i!==s.quiz.answer?' wrong':''}" type="button" data-rk="${esc(k)}" data-ri="${i}" ${r!=null?'disabled':''}>${'ABC'[i]}　${esc(c)}</button>`).join('')}</div>
       ${r!=null ? `<span>${r===s.quiz.answer?'◎ 今度は正解！':'△ 正解は '+'ABC'[s.quiz.answer]}　${esc(s.quiz.explain)}</span>` : ''}</div>`; }).join('')
-    : '<p class="empty">はずれた予想はまだありません。「今日のニュース」で予想してみましょう。</p>';
+    + (miss.length > 5 ? `<p class="mhd">ほかに ${miss.length - 5}問。上を解くと次が出てきます。</p>` : '')
+    : `<p class="empty">${Object.keys(st.fixed||{}).length ? '🎉 まちがえた問題は全部解き直しました！' : 'はずれた予想はまだありません。「今日のニュース」で予想してみましょう。'}</p>`;
 }
-$('#rmiss').addEventListener('click', e => { const b = e.target.closest('button'); if(!b || !b.dataset.rk) return; retry[b.dataset.rk] = +b.dataset.ri; markDay(); save(); buildMiss(); });
+$('#rmiss').addEventListener('click', e => { const b = e.target.closest('button'); if(!b || !b.dataset.rk) return; retry[b.dataset.rk] = +b.dataset.ri; const [d, id] = b.dataset.rk.split('|'); getEdition(d).then(ed => { const s = ed && (ed.stories||[]).find(x => x.id === id); if(s && s.quiz && +b.dataset.ri === s.quiz.answer){ st.fixed = st.fixed || {}; st.fixed[b.dataset.rk] = today(); } markDay(); save(); buildMiss(); }); });
 const wq = {}, wcache = {};
 function termChoices(w){
   const k = 'r|' + w.term; if(wcache[k]) return wcache[k];
