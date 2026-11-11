@@ -1229,8 +1229,9 @@ async function renderRegAcc(){
   $('#raccw').hidden = false;
   const pc = r => Math.round(by[r].ok / by[r].n * 100), enough = rs.filter(r => by[r].n >= 3);
   const lo = enough.length >= 2 ? enough.reduce((a, b) => pc(a) <= pc(b) ? a : b) : null, hi = lo && enough.reduce((a, b) => pc(a) >= pc(b) ? a : b);
-  box.innerHTML = `<div class="racc">${rs.map(r => `<div class="rrow" data-r="${esc(r)}"><span>${esc(r)}</span><i><b style="width:${pc(r)}%"></b></i><em>${pc(r)}%<small>（${by[r].ok}/${by[r].n}）</small></em></div>`).join('')}</div>${lo && hi !== lo && pc(hi) > pc(lo) ? `<small>${esc(hi)}の話がいちばん得意です。${esc(lo)}の話は、背景の「そもそも」を読んでから予想すると当たりやすくなります。</small>` : '<small>予想した話の地域ごとの正解率です。</small>'}`;
+  box.innerHTML = `<div class="racc">${rs.map(r => `<div class="rrow" data-r="${esc(r)}"><span>${esc(r)}</span><i><b style="width:${pc(r)}%"></b></i><em>${pc(r)}%<small>（${by[r].ok}/${by[r].n}）</small></em></div>`).join('')}</div>${lo && hi !== lo && pc(hi) > pc(lo) ? `<small>${esc(hi)}の話がいちばん得意です。${esc(lo)}の話は、背景の「そもそも」を読んでから予想すると当たりやすくなります。</small>${D.stories.some(s => s.region === lo) ? `<div class="tabs"><button class="chip" type="button" data-rgo="${esc(lo)}">今日の${esc(lo)}の話を見る →</button></div>` : ''}` : '<small>予想した話の地域ごとの正解率です。</small>'}`;
 }
+document.addEventListener('click', e => { const b = e.target.closest('[data-rgo]'); if(!b) return; filter = b.dataset.rgo; location.hash = '#today'; setTimeout(() => { renderFilters(); renderStories(); }, 0); });
 function renderReview(){
   xferInit(); renderFollows(); renderRegAcc();
   checkBadges(); $('#rbadges').innerHTML = badgesHTML(); $('#rcal').innerHTML = calHTML();
@@ -1776,6 +1777,7 @@ ruby rt{font-size:.55em;color:var(--muted);font-weight:400}
 
   function hasW(t){ try { return st.words.some(w => w.term === t); } catch(_) { return false; } }
   function list(){
+    sec.dataset.kid = '';
     const done = P.filter(p => ks.read[p.id]).length;
     const cnt = {}; todayStories().forEach(s => related(s, 2).forEach((p, j) => { cnt[p.id] = (cnt[p.id] || 0) + (j ? 1 : 2); }));
     const todayP = P.filter(p => cnt[p.id]).sort((a, b) => cnt[b.id] - cnt[a.id]).slice(0, 5);
@@ -1930,7 +1932,7 @@ ruby rt{font-size:.55em;color:var(--muted);font-weight:400}
     box.innerHTML = `<h4>📚 これまでの号でも出てきたニュース（${hits.length}件）</h4><div class="kstories">${hits.slice(0, 8).map(([d, s]) => `<a href="#today" data-kgo="${e(d)}|${e(s.id)}"><small style="color:var(--muted)">${e(d.slice(5).replace('-', '/'))}</small> ${e(s.emoji || '')} ${e(s.title)}</a>`).join('')}</div>`;
     const anchor = sec.querySelector('.kd .kfoot'); if(anchor) anchor.before(box);
   }
-  function detailR(p){ detail(p); try { const r = sec.querySelector('.kd'); linkRefs(r); addRuby(r); toc(r); pastStories(p); } catch(_) {} }
+  function detailR(p){ const same = sec.dataset.kid === p.id, op = same ? [...sec.querySelectorAll('details.kdet')].map(d => d.open) : [], y = scrollY; detail(p); sec.dataset.kid = p.id; if(same){ sec.querySelectorAll('details.kdet').forEach((d, i) => { if(op[i]) d.open = true; }); } try { const r = sec.querySelector('.kd'); linkRefs(r); addRuby(r); toc(r); pastStories(p); } catch(_) {} if(same) scrollTo(0, y); }
   function open(id){ try { if(kspeaking){ speechSynthesis.cancel(); kspeaking = null; } } catch(_) {} cur = id || null; window.renderKiso(); scrollTo(0, 0); }
 
   sec.addEventListener('click', ev => {
