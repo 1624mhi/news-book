@@ -1943,6 +1943,14 @@ ruby rt{font-size:.55em;color:var(--muted);font-weight:400}
 })();
 </script>
 
+<script>(function(){ try{
+  const last = localStorage.getItem('newsbook-lastseen'), latest = (typeof EMBED !== 'undefined' && EMBED.date) || '';
+  if(latest) localStorage.setItem('newsbook-lastseen', latest);
+  if(!last || !latest || last >= latest) return;
+  const keys = Object.keys(st.quiz).filter(k => k.startsWith(last + '|'));
+  const n = (EMBED.stories||[]).length;
+  setTimeout(() => toastMsg(`🌅 新しい号が届きました（${n}話）` + (keys.length ? `　前の号は${keys.length}問予想しました` : '')), 900);
+}catch(e){} })();</script>
 <script>addEventListener('keydown', e => {
   if(e.key !== '?' || (e.target.closest && e.target.closest('input,textarea'))) return;
   let d = document.getElementById('keyhelp'); if(d){ d.remove(); return; }
