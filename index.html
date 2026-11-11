@@ -128,6 +128,13 @@ nav.filters{position:static}
 .scard{position:absolute;inset:0;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:22px 22px 18px;display:flex;flex-direction:column;gap:12px;box-shadow:0 6px 24px rgba(0,0,0,.08);touch-action:pan-y;user-select:none;-webkit-user-select:none;overflow:hidden;cursor:grab}
 .scard.back{transform:scale(.95) translateY(12px);opacity:.7;pointer-events:none}
 .sfoot{margin-top:auto;display:grid;gap:8px}.swhy{font-size:13px;line-height:1.6;background:color-mix(in srgb,var(--rc,var(--world)) 10%,var(--surface));border-radius:10px;padding:8px 12px}.swhy b{display:block;font-size:11.5px;color:var(--muted);margin-bottom:2px}.sfl{display:flex;justify-content:space-between;font-size:12px;color:var(--muted)}.tapmore{font-weight:700}
+.badges{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.badge{border:1px dashed var(--line);border-radius:12px;padding:10px 12px;display:grid;gap:2px;color:var(--muted);background:var(--surface)}
+.badge.on{border-style:solid;color:var(--ink);background:color-mix(in srgb,var(--marker) 22%,var(--surface))}
+.badge .be{font-size:26px;line-height:1.1}.badge b{font-size:14px}.badge small{font-size:11.5px;line-height:1.5}
+.badgetoast{position:fixed;left:50%;top:calc(16px + env(safe-area-inset-top,0px));transform:translateX(-50%);z-index:70;display:flex;gap:10px;align-items:center;background:var(--surface);color:var(--ink);border:2px solid var(--marker);border-radius:16px;padding:10px 18px;box-shadow:0 10px 30px rgba(0,0,0,.2);animation:bt .35s ease-out}
+.badgetoast .be{font-size:30px}.badgetoast small{display:block;font-size:11px;color:var(--muted);white-space:nowrap}.badgetoast b{white-space:nowrap}
+@keyframes bt{from{transform:translate(-50%,-20px);opacity:0}to{transform:translate(-50%,0);opacity:1}}
 .scard.anim{transition:transform .28s ease,opacity .28s ease}
 .scard h2{font-size:21px}
 .scard .lead{font-size:15px;line-height:1.75;margin:0}
@@ -373,6 +380,7 @@ body.noscroll{overflow:hidden}
   <section id="v-review" class="view" hidden>
     <h2>今週のふりかえり</h2>
     <div class="stats" id="rstats"></div>
+    <div><h3>バッジ</h3><div id="rbadges"></div></div>
     <div id="rcard"></div>
     <div><h3>はずれた予想に再挑戦</h3><div class="list" id="rmiss"></div></div>
     <div><h3>あなたが選んだ意見</h3><div class="list" id="rop"></div></div>
@@ -401,7 +409,46 @@ try { Object.assign(st, JSON.parse(localStorage.getItem(KEY)) || {}); } catch(e)
 st.quiz = st.quiz || {}; st.opinions = st.opinions || []; st.follows = st.follows || []; st.quizDays = st.quizDays || {};
 let db = null, stateRef = null, remoteReady = false, writing = Promise.resolve(), saveTimer = null;
 function setSync(t){ $('#sync').textContent = t; }
+const BADGES = [
+  ['first','🌱','はじめての予想','予想を1問答える'],
+  ['s3','🔥','3日連続','3日続けて予想する'],
+  ['s7','🔥','1週間連続','7日続けて予想する'],
+  ['all','🎯','今日を制覇','その日の予想を全部答える'],
+  ['hit10','🏹','的中10回','予想を10回当てる'],
+  ['world','🌏','世界一周','日本・マレーシア・世界の話をそれぞれ予想する'],
+  ['words10','📚','単語コレクター','単語を10個ためる'],
+  ['marks5','🖍','マーカー名人','マーカーを5か所引く'],
+  ['op5','💬','自分の意見','「あなたはどう思う？」に5回答える'],
+  ['fol3','🔎','追いかける人','3つの話題を追いかける'],
+];
+function earnedBadges(){
+  st.hits = st.hits || []; st.regs = st.regs || [];
+  (D.stories||[]).forEach(s => { const a = s.quiz ? st.quiz[qkey(s)] : null; if(a == null) return;
+    if(a === s.quiz.answer && !st.hits.includes(qkey(s))) st.hits.push(qkey(s));
+    if(!st.regs.includes(s.region)) st.regs.push(s.region); });
+  const qs = (D.stories||[]).filter(s => s.quiz), k = streak().n;
+  const ok = {first: Object.keys(st.quiz).length >= 1, s3: k >= 3, s7: k >= 7,
+    all: qs.length > 0 && qs.every(s => st.quiz[qkey(s)] != null), hit10: st.hits.length >= 10,
+    world: ['日本','マレーシア','世界'].every(r => st.regs.includes(r)), words10: st.words.length >= 10,
+    marks5: st.marks.length >= 5, op5: st.opinions.length >= 5, fol3: st.follows.length >= 3};
+  return BADGES.filter(b => ok[b[0]]).map(b => b[0]);
+}
+let badgeReady = false;
+function checkBadges(){
+  st.badges = st.badges || [];
+  const now = earnedBadges(), fresh = now.filter(id => !st.badges.includes(id));
+  if(!fresh.length) return false;
+  st.badges = st.badges.concat(fresh);
+  if(badgeReady) fresh.forEach((id, i) => { const b = BADGES.find(x => x[0] === id); setTimeout(() => badgeToast(b), 700 + i*1800); });
+  return true;
+}
+function badgeToast(b){ const d = document.createElement('div'); d.className = 'badgetoast'; d.innerHTML = `<span class="be">${b[1]}</span><span><small>バッジを手に入れました</small><b>${esc(b[2])}</b></span>`; document.body.appendChild(d); setTimeout(() => d.remove(), 2600); }
+function badgesHTML(){
+  const have = st.badges || [];
+  return `<div class="badges">${BADGES.map(b => `<div class="badge${have.includes(b[0])?' on':''}" title="${esc(b[3])}"><span class="be">${have.includes(b[0])?b[1]:'🔒'}</span><b>${esc(b[2])}</b><small>${esc(b[3])}</small></div>`).join('')}</div>`;
+}
 function save(){
+  checkBadges();
   try { localStorage.setItem(KEY, JSON.stringify(st)); } catch(e) {}
   if(!stateRef || !remoteReady) return;
   clearTimeout(saveTimer);
@@ -860,6 +907,7 @@ async function buildMiss(){
 }
 $('#rmiss').addEventListener('click', e => { const b = e.target.closest('button'); if(!b || !b.dataset.rk) return; retry[b.dataset.rk] = +b.dataset.ri; markDay(); save(); buildMiss(); });
 function renderReview(){
+  checkBadges(); $('#rbadges').innerHTML = badgesHTML();
   const w0 = weekAgo();
   const wkWords = st.words.filter(w => (w.savedAt||w.date||'') >= w0);
   const wkBm = st.bookmarks.filter(b => (b.savedAt||b.date||'') >= w0);
@@ -1005,7 +1053,7 @@ function route(){
   if(v!=='today' && openId) closeSheet();
 }
 addEventListener('hashchange', () => { route(); scrollTo(0,0); });
-renderEdition(); route();
+renderEdition(); route(); checkBadges(); badgeReady = true;
 setSync('この端末に保存しています');
 
 /* ---------- サイト版：号の一覧をファイルから読む ---------- */
