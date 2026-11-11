@@ -135,6 +135,9 @@ nav.filters{position:static}
 .badgetoast{position:fixed;left:50%;top:calc(16px + env(safe-area-inset-top,0px));transform:translateX(-50%);z-index:70;display:flex;gap:10px;align-items:center;background:var(--surface);color:var(--ink);border:2px solid var(--marker);border-radius:16px;padding:10px 18px;box-shadow:0 10px 30px rgba(0,0,0,.2);animation:bt .35s ease-out}
 .badgetoast .be{font-size:30px}.badgetoast small{display:block;font-size:11px;color:var(--muted);white-space:nowrap}.badgetoast b{white-space:nowrap}
 @keyframes bt{from{transform:translate(-50%,-20px);opacity:0}to{transform:translate(-50%,0);opacity:1}}
+.tell{border:1.5px dashed color-mix(in srgb,var(--rc) 45%,transparent);border-radius:14px;padding:12px 14px;display:grid;gap:8px;margin-top:6px}
+.tell h3{margin:0;font-size:14px}.tell .tq{margin:0;font-size:14px;line-height:1.7;background:color-mix(in srgb,var(--rc) 7%,var(--surface));border-radius:10px;padding:10px 12px}
+.tell .tb{display:flex;flex-wrap:wrap;gap:10px;align-items:center}.tell small{color:var(--muted);font-size:12px}
 .scard.anim{transition:transform .28s ease,opacity .28s ease}
 .scard h2{font-size:21px}
 .scard .lead{font-size:15px;line-height:1.75;margin:0}
@@ -696,6 +699,19 @@ function showTip(btn){
   tip.style.left = left + 'px'; tip.style.top = (r.bottom - h.top + 6) + 'px';
 }
 function hideTip(){ const t = $('#tip'); if(t) t.remove(); }
+function tellText(s){
+  const fact = s.points[0];
+  return `知ってた？ ${s.hook || s.title}\n${shortText(fact, 110)}`;
+}
+function tellHTML(s){
+  return `<div class="tell"><h3>🗣 だれかに話してみる</h3><p class="tq">${esc(tellText(s)).replace(/\n/g,'<br>')}</p>
+    <div class="tb"><button class="pill" type="button" data-tell="${esc(s.id)}">📤 送る・コピー</button><small>人に話すと、ぐっと覚えやすくなります</small></div></div>`;
+}
+async function tellStory(s, b){
+  const text = tellText(s) + '\n— ニュース帳より', url = /^https?:/.test(location.href) && !/claude\.ai|claudeusercontent/.test(location.href) ? location.href.split('#')[0] : '';
+  try{ if(navigator.share){ await navigator.share(url ? {text, url} : {text}); return; } }catch(e){ if(e && e.name === 'AbortError') return; }
+  try{ await navigator.clipboard.writeText(text + (url ? '\n' + url : '')); toastMsg('📋 コピーしました'); }catch(e){ toastMsg('コピーできませんでした'); }
+}
 function nextHTML(s){
   const order = (tileOrder.length ? tileOrder : D.stories.map(x => x.id)).map(id => D.stories.find(x => x.id === id)).filter(Boolean);
   const i = order.findIndex(x => x.id === s.id);
@@ -735,6 +751,7 @@ function renderSheet(){
       ${s.why ? `<div class="sec"><h3>わたしに関係ある？</h3><p style="margin:0">${applyMarks(esc(s.why))}</p></div>` : ''}
       ${s.opinion ? `<div class="op"><div class="q">💬 ${esc(s.opinion.q)}</div><div class="qopts">${s.opinion.choices.map((c,i) => `<button class="qopt" type="button" data-op="${i}" aria-pressed="${!!op && op.choice===c}">${esc(c)}</button>`).join('')}</div>
         <small>${op ? '選んだ意見は「ふりかえり」に残ります。考えが変わったら選び直せます。' : '正解はありません。今の自分の考えに一番近いものを選んでください。'}</small></div>` : ''}
+      ${tellHTML(s)}
       <div class="more"><span>ここから先は、もっと知りたいとき用</span></div>
       <div class="sec" id="tl-${esc(s.id)}" hidden><h3>前の号からの続き</h3><div class="tl"></div></div>
       ${window.kisoLinks ? window.kisoLinks(s) : ''}
@@ -765,6 +782,7 @@ function onStoryClick(e){
   if(b.dataset.next){ openSheet(b.dataset.next); return; }
   const s = D.stories.find(x => x.id === openId);
   if(b.dataset.speak && s){ speakStory(s); return; }
+  if(b.dataset.tell && s){ tellStory(s, b); return; }
   if(b.dataset.quiz && s){ markDay(); st.quiz[qkey(s)] = +b.dataset.quiz; justRight = +b.dataset.quiz === s.quiz.answer ? qkey(s) : null; save(); renderStories(); justRight = null; return; }
   if(b.dataset.op && s){ const c = s.opinion.choices[+b.dataset.op];
     st.opinions = st.opinions.filter(o => !(o.date===D.date && o.id===s.id));
