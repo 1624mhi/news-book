@@ -316,6 +316,7 @@ body.noscroll{overflow:hidden}
 .yomi{font-size:.75em;font-weight:500;color:var(--muted);margin-left:2px}
 .memo{display:grid;gap:8px;margin:18px 0}.memo h3{margin:0}.memo textarea{font:inherit;font-size:14.5px;width:100%;box-sizing:border-box;border:1.5px solid var(--line);border-radius:12px;padding:10px;background:var(--surface);color:var(--ink);resize:vertical}.memo textarea:focus{border-color:var(--accent);outline:none}.memo .pill{justify-self:start;--rc:var(--accent)}
 .mhd{font-size:13px;color:var(--muted);margin:4px 0 8px}.mhd b{color:var(--accent);font-size:16px}
+.cal{display:grid;gap:6px;max-width:360px}.calh,.calg{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}.calh span{font-size:11px;color:var(--muted);text-align:center}.calg i{aspect-ratio:1;border-radius:6px;display:grid;place-items:center;font-size:11px;font-style:normal;color:var(--muted)}.calg i.l0{background:var(--line)}.calg i.l1{background:color-mix(in srgb,var(--accent) 30%,transparent);color:var(--ink)}.calg i.l2{background:color-mix(in srgb,var(--accent) 60%,transparent);color:#fff}.calg i.l3{background:var(--accent);color:#fff}.calg i.td{outline:2px solid var(--ink);outline-offset:1px}.cal small{color:var(--muted)}
 .srsd{letter-spacing:2px;color:var(--accent)}
 .alldone .pill{--rc:var(--accent);border-radius:12px;text-align:left}.alldone .kisonext{align-self:flex-start;margin:0}.alldone{flex-basis:100%;display:flex;flex-direction:column;gap:6px;padding:12px;border-radius:12px;background:color-mix(in srgb,var(--my) 10%,transparent)}.alldone>b{color:var(--my)}.alldone .dn{display:flex;flex-wrap:wrap;gap:6px;align-items:center}.alldone small{color:var(--muted)}
 .links{display:grid;gap:8px}
@@ -430,6 +431,7 @@ html.fs2 .sh-body,html.fs2 #v-kiso,html.fs2 #wbody,html.fs2 .sh-hero h2{zoom:1.2
     <div class="stats" id="rstats"></div>
     <div id="rcard"></div>
     <div id="rfolw"><h3>🔎 追いかけ中の話</h3><div id="rfol"></div></div>
+    <div><h3>📅 読んだ日カレンダー</h3><div id="rcal"></div></div>
     <div><h3>バッジ</h3><div id="rbadges"></div></div>
     <div><h3>はずれた予想に再挑戦</h3><div class="list" id="rmiss"></div></div>
     <div><h3>あなたが選んだ意見</h3><div class="list" id="rop"></div></div>
@@ -1194,9 +1196,15 @@ async function renderFollows(){
   box.innerHTML = st.follows.map(f => { const xs = by[f].sort((a,b) => b.date.localeCompare(a.date)); if(!xs.length) return '';
     return `<div class="folc"><b>${esc(xs[0].emoji||'📰')} ${xs.length}つの号に登場</b>${xs.map((x,i) => `<button type="button" class="gostory" data-gs="${esc(x.date)}|${esc(x.id)}">${esc(x.date.replace(/-/g,'.'))}${i===0?'（最新）':''}　${esc(x.title)} →</button>`).join('')}</div>`; }).join('') || '<p class="empty">追いかけている話の記事が見つかりませんでした。</p>';
 }
+function calHTML(){
+  const qd = st.quizDays || {}, days = [], d0 = new Date();
+  for(let i = 27; i >= 0; i--){ const d = new Date(d0); d.setDate(d.getDate() - i); days.push(d.toLocaleDateString('sv-SE',{timeZone:'Asia/Kuala_Lumpur'})); }
+  const lead = (new Date(days[0] + 'T00:00:00').getDay() + 6) % 7, n = days.filter(x => qd[x]).length;
+  return `<div class="cal"><div class="calh">${['月','火','水','木','金','土','日'].map(x => `<span>${x}</span>`).join('')}</div><div class="calg">${'<i></i>'.repeat(lead)}${days.map(x => { const c = qd[x]||0, lv = c >= 10 ? 3 : c >= 4 ? 2 : c ? 1 : 0; return `<i class="l${lv}${x === today() ? ' td' : ''}" title="${esc(x)}：${c}問">${+x.slice(8)}</i>`; }).join('')}</div><small>この4週間で ${n}日 予想しました。色が濃いほどたくさん答えた日です。</small></div>`;
+}
 function renderReview(){
   xferInit(); renderFollows();
-  checkBadges(); $('#rbadges').innerHTML = badgesHTML();
+  checkBadges(); $('#rbadges').innerHTML = badgesHTML(); $('#rcal').innerHTML = calHTML();
   const w0 = weekAgo();
   const wkWords = st.words.filter(w => (w.savedAt||w.date||'') >= w0);
   const wkBm = st.bookmarks.filter(b => (b.savedAt||b.date||'') >= w0);
