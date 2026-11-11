@@ -765,6 +765,11 @@ function showTip(btn){
   tip.style.left = left + 'px'; tip.style.top = (r.bottom - h.top + 6) + 'px';
 }
 function hideTip(){ const t = $('#tip'); if(t) t.remove(); }
+function askLinks(s){
+  const ctx = `ニュース「${s.title}」について。要点：${(s.points||[]).join(' ')}\n\n`;
+  const qs = [['ニュースに詳しくない私にもわかるように、もっとかみくだいて説明して','かみくだいて説明して'],['この話の歴史的な経緯を3つ、簡単に教えて','歴史的な経緯は？'],['この話は日本やマレーシアに住む私の暮らしにどう関係する？','私の暮らしとの関係は？']];
+  return `<div class="ask"><h3>Claudeに聞く</h3><div class="row">${qs.map(([q,l]) => `<a class="btn" target="_blank" rel="noopener" href="https://claude.ai/new?q=${encodeURIComponent(ctx + q)}">${esc(l)} ↗</a>`).join('')}</div><small style="color:var(--muted)">Claudeが新しいタブで開き、この話の要点つきで質問が入ります。</small></div>`;
+}
 function tellText(s){
   const fact = s.points[0];
   return `知ってた？ ${s.hook || s.title}\n${shortText(fact, 110)}`;
@@ -833,7 +838,7 @@ function renderSheet(){
         <div class="row"><button class="btn primary" type="button" data-ask="${esc(s.id)}">質問する</button>
         <button class="btn" type="button" data-ask="${esc(s.id)}" data-preset="この話題をもっと深く理解するために、知っておくべき歴史的な経緯を3つ教えて">歴史的な経緯は？</button>
         <button class="btn" type="button" data-ask="${esc(s.id)}" data-preset="この話題は日本とマレーシアの暮らしにどう関係する？">私の生活との関係は？</button></div>
-        <div class="answer" id="a-${esc(s.id)}" hidden></div></div>` : ''}
+        <div class="answer" id="a-${esc(s.id)}" hidden></div></div>` : askLinks(s)}
 
       ${nextHTML(s)}
       ` : ''}
