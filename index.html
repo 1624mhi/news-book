@@ -176,6 +176,10 @@ main.tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr)
 .t-title{font-size:12.5px;color:var(--muted);line-height:1.5}
 .t-state{margin-top:4px;font-size:12px;font-weight:700;color:var(--rc)}
 .t-state.done{color:var(--muted)}
+main.tiles.compact{grid-template-columns:1fr;gap:6px}
+.compact .tile{grid-template-columns:auto 1fr;grid-template-areas:"e top" "e hook" "e st";column-gap:12px;row-gap:2px;padding:10px 14px;border-radius:12px}
+.compact .t-emo{grid-area:e;font-size:26px;align-self:center}.compact .t-top{grid-area:top}.compact .t-hook{grid-area:hook;font-size:15px}.compact .t-state{grid-area:st;margin-top:0}
+.compact .t-title,.compact .herolabel{display:none}.compact .tile.hero{grid-column:auto}
 body.noscroll{overflow:hidden}
 .sheet{position:fixed;inset:0;z-index:40;background:color-mix(in srgb,var(--ink) 45%,transparent);overflow-y:auto;overscroll-behavior:contain;
   padding:calc(env(safe-area-inset-top,0px) + 24px) max(12px,env(safe-area-inset-right,0px)) calc(env(safe-area-inset-bottom,0px) + 40px) max(12px,env(safe-area-inset-left,0px))}
@@ -257,6 +261,7 @@ body.noscroll{overflow:hidden}
 .tile.hero{grid-column:1/-1;grid-template-columns:auto 1fr;column-gap:18px;padding:18px 20px}
 .tile.hero .t-top,.tile.hero .t-state{grid-column:1/-1}
 .tile.hero .t-emo{font-size:56px;grid-row:2/4;align-self:center}
+main.compact .tile.hero{grid-column:auto;column-gap:12px;padding:10px 14px}main.compact .tile.hero .t-top,main.compact .tile.hero .t-state{grid-column:auto}main.compact .tile.hero .t-emo{font-size:26px;grid-row:auto}
 .tile.hero .t-hook{font-size:clamp(19px,3.4vw,24px)}
 .tile.hero .t-title{grid-column:2}
 .herolabel{background:var(--ink);color:var(--surface);border-radius:999px;padding:0 8px;font-weight:700}
@@ -592,11 +597,13 @@ function applyMarks(html){
   st.marks.forEach(m => { const t = esc(m.text); if(t.length > 1 && html.includes(t)) html = html.split(t).join(`<mark>${t}</mark>`) });
   return html;
 }
+var compact = (() => { try{ return localStorage.getItem('newsbook-cmp') === '1'; }catch(e){ return false; } })();
 var unrFirst = (() => { try{ return localStorage.getItem('newsbook-unr') === '1'; }catch(e){ return false; } })();
 function renderFilters(){
   $('#filters').innerHTML = regions.map(r => `<button class="chip" type="button" data-r="${r}" aria-pressed="${r===filter}">${r}</button>`).join('') +
     `<button class="chip" type="button" data-r="★" aria-pressed="${filter==='★'}">🔖 あとで読む</button>` +
-    `<button class="chip" type="button" data-unr="1" aria-pressed="${unrFirst}">⏩ まだの話を先に</button>`;
+    `<button class="chip" type="button" data-unr="1" aria-pressed="${unrFirst}">⏩ まだの話を先に</button>` +
+    `<button class="chip" type="button" data-cmp="1" aria-pressed="${compact}">☰ 見出しだけ</button>`;
 }
 let pqT = 0;
 async function searchPast(q){
@@ -612,7 +619,7 @@ async function searchPast(q){
 $('#pastq').addEventListener('click', e => { const g = e.target.closest('[data-gs]'); if(!g) return; const [d, id] = g.dataset.gs.split('|'); $('#q').value = ''; qword = ''; searchPast(''); goStory(d, id); });
 $('#q').addEventListener('input', e => { qword = e.target.value.trim().toLowerCase(); renderStories(); clearTimeout(pqT); pqT = setTimeout(() => searchPast(qword), 300); });
 $('#score').addEventListener('click', e => { if(e.target.closest('[data-dshare]')){ shareDay(); return; } const d = e.target.closest('[data-dopen]'); if(d){ openSheet(d.dataset.dopen); return; } const b = e.target.closest('.laterbtn'); if(!b) return; filter = '★'; renderFilters(); renderStories(); });
-$('#filters').addEventListener('click', e => { const b = e.target.closest('button'); if(!b) return; if(b.dataset.unr){ unrFirst = !unrFirst; try{ localStorage.setItem('newsbook-unr', unrFirst ? '1' : '0'); }catch(_){} renderFilters(); renderStories(); return; } filter = b.dataset.r; renderFilters(); renderStories(); });
+$('#filters').addEventListener('click', e => { const b = e.target.closest('button'); if(!b) return; if(b.dataset.cmp){ compact = !compact; try{ localStorage.setItem('newsbook-cmp', compact ? '1' : '0'); }catch(_){} renderFilters(); renderStories(); return; } if(b.dataset.unr){ unrFirst = !unrFirst; try{ localStorage.setItem('newsbook-unr', unrFirst ? '1' : '0'); }catch(_){} renderFilters(); renderStories(); return; } filter = b.dataset.r; renderFilters(); renderStories(); });
 let sample = null;
 
 function figHTML(f){
@@ -694,7 +701,7 @@ function renderStories(){ try{ navDue(); }catch(e){}
   list = list.filter(isFol).concat(list.filter(s => !isFol(s)));
   if(unrFirst){ const done = s => s.quiz && st.quiz[qkey(s)] != null; list = list.filter(s => !done(s)).concat(list.filter(done)); }
   if(hero) list.unshift(hero);
-  tileOrder = list.map(x => x.id);
+  tileOrder = list.map(x => x.id); $('#stories').classList.toggle('compact', compact);
   $('#stories').innerHTML = list.length ? list.map(x => tileHTML(x, x === hero)).join('') : (qword ? `<p class="empty">「${esc(qword)}」が出てくる話は今日の号にはありません。</p>` : `<p class="empty">まだ「あとで読む」にした話はありません。話題を開いて「🔖 あとで読む」を押すとここに集まります。</p>`);
   const qs = D.stories.filter(s => s.quiz), done = qs.filter(s => st.quiz[qkey(s)] != null), ok = done.filter(s => st.quiz[qkey(s)] === s.quiz.answer);
   { const c = s => new Set(s.headlines.map(h => h.outlet)).size, top = D.stories.slice().sort((a,b) => c(b) - c(a)).slice(0, 3);
@@ -1605,7 +1612,12 @@ ruby rt{font-size:.55em;color:var(--muted);font-weight:400}
 .kcbtns button:first-child{border-color:var(--my);background:color-mix(in srgb,var(--my) 14%,var(--surface))}
 .kcbtns button:last-child{border-color:var(--jp);background:color-mix(in srgb,var(--jp) 10%,var(--surface))}
 .ktoc{gap:4px}
-.kd>div,.kd>p{scroll-margin-top:90px}
+.kd>div,.kd>p,.kd>details{scroll-margin-top:90px}
+.kdet>summary{list-style:none;cursor:pointer;display:flex;justify-content:space-between;align-items:center}
+.kdet>summary::-webkit-details-marker{display:none}
+.kdet>summary h4{margin:0;font-family:var(--f-display);font-size:15.5px}
+.kdet>summary::after{content:"ひらく ▾";font-size:12px;color:var(--accent);font-weight:700}
+.kdet[open]>summary::after{content:"とじる ▴"}
 /* 詳細 */
 .kd{display:grid;gap:18px}
 .kback{justify-self:start;font:inherit;font-size:13px;font-weight:700;color:var(--accent);background:none;border:0;padding:4px 0;cursor:pointer}
@@ -1807,11 +1819,11 @@ ruby rt{font-size:.55em;color:var(--muted);font-weight:400}
       <p class="kwhy"><b>なぜニュースによく出る？</b> ${e(p.why)}</p>
       ${p.me ? `<div class="kme"><b>🙋 わたしに関係ある？</b>${e(p.me)}</div>` : ''}
       ${p.blocks.map(blk).join('')}
-      <div class="kblk"><h4>📰 ニュースではこう言います</h4><div class="ktalk">${p.talk.map(([a, b]) => `<div><b>${e(a)}</b><span>${e(b)}</span></div>`).join('')}</div></div>
+      <details class="kblk kdet"><summary><h4>📰 ニュースではこう言います（${p.talk.length}）</h4></summary><div class="ktalk">${p.talk.map(([a, b]) => `<div><b>${e(a)}</b><span>${e(b)}</span></div>`).join('')}</div></details>
       ${p.watch ? `<div class="kwatch"><h4>👀 このニュースが出たら、ここに注目</h4><p>記事を読むとき、この3つを探すと「ふーん」で終わりません</p><ul>${p.watch.map(t => `<li>${e(t)}</li>`).join('')}</ul></div>` : ''}
       ${p.key ? `<div class="kkey"><h4>✅ これだけ覚えればOK</h4><ol>${p.key.map(t => `<li>${e(t)}</li>`).join('')}</ol></div>` : ''}
       <div class="kblk"><h4>🧠 ${qs(p).length}問チェック</h4>${qs(p).map((q, k) => { const qa = ks.quiz[qk(p, k)]; return `<div class="kquiz"${k ? ' style="border-top:1px dashed var(--line);padding-top:10px"' : ''}><p>Q${k + 1}. ${e(q.q)}</p><div class="kc">${q.c.map((c, j) => `<button type="button" data-kq="${k}:${j}" class="${qa != null ? (j === q.a ? 'ok' : (j === qa ? 'ng' : '')) : ''}">${e(c)}</button>`).join('')}</div>${qa != null ? `<p class="kans">${qa === q.a ? '⭕ 正解！' : '❌ おしい！ 正解は「' + e(q.c[q.a]) + '」'}　${e(q.why)}</p>` : ''}${qa != null && qa !== q.a ? `<button type="button" class="kchip" data-kscroll="1" style="justify-self:start">↑ 「これだけ覚えればOK」を読み直す</button>` : ''}</div>`; }).join('')}</div>
-      <div class="kblk"><h4>📒 おぼえておきたい言葉</h4><div class="kterms">${p.terms.map(([t, d]) => `<div><p><b>${e(t)}</b>${e(d)}</p>${typeof st !== 'undefined' ? `<button type="button" data-kw="${e(t)}" data-kd="${e(d)}" class="${hasW(t) ? 'on' : ''}">${hasW(t) ? '単語帳に追加済み' : '単語帳に追加'}</button>` : ''}</div>`).join('')}</div></div>
+      <details class="kblk kdet"><summary><h4>📒 おぼえておきたい言葉（${p.terms.length}）</h4></summary><div class="kterms">${p.terms.map(([t, d]) => `<div><p><b>${e(t)}</b>${e(d)}</p>${typeof st !== 'undefined' ? `<button type="button" data-kw="${e(t)}" data-kd="${e(d)}" class="${hasW(t) ? 'on' : ''}">${hasW(t) ? '単語帳に追加済み' : '単語帳に追加'}</button>` : ''}</div>`).join('')}</div></details>
       ${ss.length ? `<div class="kblk"><h4>🗞 今日のニュースでは</h4><div class="kstories">${ss.map(s => `<a href="#today" data-ks="${e(s.id)}">${e(s.emoji || '')} ${e(s.title)}</a>`).join('')}</div></div>` : ''}
       <div class="kblk"><h4>🔗 あわせて読みたい</h4><div class="kchips">${p.related.map(id => byId[id]).filter(Boolean).map(r => `<button type="button" class="kchip k-${e(r.group)}" data-kiso="${e(r.id)}">${e(r.emoji)} ${e(r.title)}${ks.read[r.id] ? ' ✓' : ''}</button>`).join('')}</div></div>
       <div class="kfoot"><button type="button" class="kread ${ks.read[p.id] ? 'on' : ''}" data-kr="1">${ks.read[p.id] ? '✓ 読みました' : '読んだ！'}</button>${nx ? `<button type="button" class="kchip k-${e(nx.group)}" data-kiso="${e(nx.id)}">次の講座：${e(nx.emoji)} ${e(nx.title)} →</button>` : ''}</div>
@@ -1892,14 +1904,14 @@ ruby rt{font-size:.55em;color:var(--muted);font-weight:400}
     }
   }
   function toc(r){
-    const L = [[/地図|マップ|通り道|大国/, '🗺 地図'], [/年表/, '📅 年表'], [/注目/, '👀 注目'], [/これだけ/, '✅ 要点'], [/1問/, '🧠 クイズ'], [/言葉/, '📒 言葉']];
+    const L = [[/地図|マップ|通り道|大国/, '🗺 地図'], [/年表/, '📅 年表'], [/注目/, '👀 注目'], [/これだけ/, '✅ 要点'], [/問チェック/, '🧠 クイズ'], [/おぼえておきたい言葉/, '📒 言葉']];
     const hs = [], labels = [];
-    r.querySelectorAll('.kblk>h4,.kkey>h4,.kwatch>h4').forEach(h => { const m = L.find(([re]) => re.test(h.textContent)); if(m && !labels.includes(m[1])){ hs.push(h); labels.push(m[1]); } });
+    r.querySelectorAll('.kblk>h4,.kblk>summary>h4,.kkey>h4,.kwatch>h4').forEach(h => { const m = L.find(([re]) => re.test(h.textContent)); if(m && !labels.includes(m[1])){ hs.push(h); labels.push(m[1]); } });
     if(hs.length < 3) return;
     const nav = document.createElement('div'); nav.className = 'kchips ktoc'; nav.setAttribute('aria-label', 'この講座の目次');
     hs.forEach((h, i) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'kchip'; b.style.cssText = 'font-size:12px;padding:2px 10px;font-weight:500';
       b.textContent = labels[i]; b.dataset.ktoc = i; nav.append(b); });
-    nav.addEventListener('click', ev => { const b = ev.target.closest('[data-ktoc]'); if(!b) return; ev.stopPropagation(); hs[+b.dataset.ktoc].closest('.kblk,.kkey,.kwatch,.kme').scrollIntoView({behavior: 'smooth', block: 'start'}); });
+    nav.addEventListener('click', ev => { const b = ev.target.closest('[data-ktoc]'); if(!b) return; ev.stopPropagation(); (d => { if(d.tagName === 'DETAILS') d.open = true; return d; })(hs[+b.dataset.ktoc].closest('.kblk,.kkey,.kwatch,.kme')).scrollIntoView({behavior: 'smooth', block: 'start'}); });
     const one = r.querySelector('.kone'); if(one) one.before(nav);
   }
   async function pastStories(p){
