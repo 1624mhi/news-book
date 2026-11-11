@@ -359,9 +359,6 @@ html.fs2 .sh-body,html.fs2 #v-kiso,html.fs2 #wbody,html.fs2 .sh-hero h2{zoom:1.2
   </nav>
 
   <section id="v-swipe" class="swipe" hidden>
-    <div class="tour" id="tour" hidden><b>👋 はじめての方へ（3つだけ）</b>
-      <ol><li>まず<b>予想</b>してみる。答えると何が起きたかが開きます。</li><li>気になる話は<b>右へスワイプ</b>で「あとで読む」、興味がなければ左へ。</li><li>記事の<b>点線の言葉</b>を押すと、意味が出て単語帳にためられます。</li></ol>
-      <button type="button" class="pill" id="tourok">わかった</button></div>
     <nav class="filters" aria-label="分野で絞り込む" id="stabs" style="justify-content:center;border:0;padding-block:0"></nav>
     <div class="sprog" id="sprog"></div>
     <div class="deck" id="deck"></div>
@@ -1185,9 +1182,6 @@ addEventListener('hashchange', () => { route(); scrollTo(0,0); });
 (() => { const L = ['標準','大','特大']; let f = 0; try{ f = +localStorage.getItem('newsbook-fs') || 0; }catch(e){}
   const ap = () => { document.documentElement.classList.remove('fs1','fs2'); if(f) document.documentElement.classList.add('fs'+f); $('#fsbtn b').textContent = L[f]; };
   ap(); $('#fsbtn').addEventListener('click', () => { f = (f + 1) % 3; try{ localStorage.setItem('newsbook-fs', f); }catch(e){} ap(); }); })();
-(() => { let seen = false; try{ seen = localStorage.getItem('newsbook-tour') === '1' || Object.keys(st.quiz).length > 0; }catch(e){}
-  if(!seen) $('#tour').hidden = false;
-  $('#tourok').addEventListener('click', () => { $('#tour').hidden = true; try{ localStorage.setItem('newsbook-tour', '1'); }catch(e){} }); })();
 renderEdition(); route(); checkBadges(); badgeReady = true;
 setSync('この端末に保存しています');
 
