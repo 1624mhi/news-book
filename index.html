@@ -310,6 +310,7 @@ body.noscroll{overflow:hidden}
 #pastq{margin-top:16px}#pastq h3{font-size:15px;margin:0 0 8px}
 .pastop{font-size:13px;line-height:1.7;background:var(--accent-soft);border-radius:10px;padding:8px 10px;margin:8px 0}
 .say3{font:inherit;font-size:12px;font-weight:700;margin-left:6px;border:1.5px solid var(--accent);color:var(--accent);background:var(--surface);border-radius:99px;padding:2px 10px;cursor:pointer;vertical-align:middle}
+.wkmap{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px}#wpl{display:grid;gap:4px;margin-top:8px;font-size:13px}#wpl small{color:var(--muted)}
 .srsd{letter-spacing:2px;color:var(--accent)}
 .alldone .pill{--rc:var(--accent);border-radius:12px;text-align:left}.alldone .kisonext{align-self:flex-start;margin:0}.alldone{flex-basis:100%;display:flex;flex-direction:column;gap:6px;padding:12px;border-radius:12px;background:color-mix(in srgb,var(--my) 10%,transparent)}.alldone>b{color:var(--my)}.alldone .dn{display:flex;flex-wrap:wrap;gap:6px;align-items:center}.alldone small{color:var(--muted)}
 .links{display:grid;gap:8px}
@@ -1197,6 +1198,7 @@ $('#rfol').addEventListener('click', e => { const b = e.target.closest('[data-gs
 $('#rbm').addEventListener('click', e => { const a=e.target.closest('a'); if(a && a.dataset.go) openEdition(a.dataset.go); });
 
 /* ---------- 過去の号 ---------- */
+var weekPins = [];
 async function renderWeek(){
   const box = $('#week'); if(!box || !editions.length) return;
   const w0 = weekAgo(), eds = editions.filter(e => e.date > w0);
@@ -1207,15 +1209,20 @@ async function renderWeek(){
   const qd = all.filter(s => s.quiz && st.quiz[s.date+'|'+s.id] != null), ok = qd.filter(s => st.quiz[s.date+'|'+s.id] === s.quiz.answer);
   const th = {}; all.forEach(s => { if(s.thread) (th[s.thread] = th[s.thread] || []).push(s); });
   const cont = Object.entries(th).filter(([k, xs]) => new Set(xs.map(x => x.date)).size >= 2).sort((a, b) => b[1].length - a[1].length).slice(0, 5);
-  const mx = Math.max(1, ...Object.values(reg));
+  const mx_ = Math.max(1, ...Object.values(reg)), wg = [];
+  all.filter(s => s.place).forEach(s => { const x = mx(s.place[2]), y = my(s.place[1]) * MAPH / MAPW;
+    let g = wg.find(g => Math.hypot(g.x - x, g.y - y) < (innerWidth < 560 ? 6 : 3.5)); if(!g){ g = {x, y, lat: s.place[1], lon: s.place[2], names: [], list: []}; wg.push(g); }
+    if(!g.names.includes(s.place[0])) g.names.push(s.place[0]); g.list.push(s); });
+  weekPins = wg;
+  const wmap = wg.length ? `<div class="wkmap"><div class="mapbox">${landSVG}${wg.map((g, i) => `<button class="pin" type="button" data-wp="${i}" data-r="${esc(g.list[0].region)}" title="${esc(g.names.join('・'))}" style="left:${mx(g.lon)}%;top:${my(g.lat)}%"><span class="pe">${esc(g.list[0].emoji||'')}</span>${g.list.length>1?g.list.length:''}</button>`).join('')}</div><div id="wpl"><small>点を押すと、その場所の今週の話が出ます</small></div></div>` : '';
   box.innerHTML = `<h2>📅 この1週間のまとめ</h2><div class="week">
     <div class="wkn"><div class="stat"><b>${eds.length}</b><span>届いた号</span></div><div class="stat"><b>${all.length}</b><span>話題</span></div><div class="stat"><b>${qd.length ? ok.length + '/' + qd.length : '—'}</b><span>あなたの予想の的中</span></div></div>
-    <div class="wkr">${Object.entries(reg).sort((a, b) => b[1] - a[1]).map(([r, n]) => `<div><span class="reg" data-r="${esc(r)}">${esc(r)}</span><i style="width:${Math.round(n / mx * 100)}%" data-r="${esc(r)}"></i><small>${n}話</small></div>`).join('')}</div>
+    ${wmap}<div class="wkr">${Object.entries(reg).sort((a, b) => b[1] - a[1]).map(([r, n]) => `<div><span class="reg" data-r="${esc(r)}">${esc(r)}</span><i style="width:${Math.round(n / mx_ * 100)}%" data-r="${esc(r)}"></i><small>${n}話</small></div>`).join('')}</div>
     ${cont.length ? `<h3>🧵 何日も続いている話</h3>${cont.map(([k, xs]) => { xs.sort((a, b) => a.date.localeCompare(b.date)); const f = st.follows.includes(k);
       return `<div class="folc"><b>${esc(xs[xs.length-1].emoji||'📰')} ${new Set(xs.map(x => x.date)).size}日にわたって登場${f ? '　<small>追いかけ中</small>' : ''}</b>${xs.map(x => `<button type="button" class="gostory" data-gs="${esc(x.date)}|${esc(x.id)}">${esc(x.date.slice(5).replace('-','/'))}　${esc(x.title)} →</button>`).join('')}${f ? '' : `<button type="button" class="pill wfol" data-wfol="${esc(k)}">＋ この話を追いかける</button>`}</div>`; }).join('')}` : '<p class="empty">号が増えると、何日も続いている話がここにつながって見えます。</p>'}
   </div>`;
 }
-$('#week').addEventListener('click', e => { const g = e.target.closest('[data-gs]'); if(g){ const [d, id] = g.dataset.gs.split('|'); goStory(d, id); return; }
+$('#week').addEventListener('click', e => { const wp = e.target.closest('[data-wp]'); if(wp){ const g = weekPins[+wp.dataset.wp]; $('#wpl').innerHTML = `<b>📍 ${esc(g.names.join('・'))}</b>` + g.list.sort((a,b) => b.date.localeCompare(a.date)).map(x => `<button type="button" class="gostory" data-gs="${esc(x.date)}|${esc(x.id)}">${esc(x.date.slice(5).replace('-','/'))}　${esc(x.emoji||'📰')} ${esc(x.title)} →</button>`).join(''); return; } const g = e.target.closest('[data-gs]'); if(g){ const [d, id] = g.dataset.gs.split('|'); goStory(d, id); return; }
   const f = e.target.closest('[data-wfol]'); if(f){ if(!st.follows.includes(f.dataset.wfol)) st.follows = st.follows.concat(f.dataset.wfol); save(); toastMsg('＋ 追いかけ中に入れました'); renderWeek(); } });
 function renderArchive(){
   renderWeek();
