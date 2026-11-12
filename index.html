@@ -448,6 +448,7 @@ html.fs2 .sh-body,html.fs2 #v-kiso,html.fs2 #wbody,html.fs2 .sh-hero h2{zoom:1.2
     <div><h3>はずれた予想に再挑戦</h3><div class="list" id="rmiss"></div></div>
     <div><h3>あなたが選んだ意見</h3><div class="list" id="rop"></div></div>
     <div><h3>今週あとで読むにした話</h3><div class="list" id="rbm"></div></div>
+    <div id="rskw" hidden><h3>👈 とばした話（気が向いたら）</h3><div class="list" id="rsk"></div></div>
     <details class="xfer" id="gsync"><summary>🔄 スマホとパソコンを自動で同期（GitHub）</summary>
       <p id="gstat">まだつながっていません。</p>
       <div id="gform"><div class="gsteps"><div><a class="pill" href="https://github.com/settings/tokens/new?scopes=gist&amp;description=newsbook-sync" target="_blank" rel="noopener">① GitHubでトークンを作る ↗</a><br><small>「Expiration」を <b>No expiration</b> にして、いちばん下の緑の <b>Generate token</b> を押す。出てきた <b>ghp_…</b> をコピー。</small></div><div><small>② 下に貼って「つなぐ」。もう1台の端末でも同じトークンを貼るだけです（トークンはメモアプリなどに保存しておくと楽です）。</small></div></div><input type="password" id="gtok" placeholder="GitHubのトークン（ghp_… または github_pat_…）" autocomplete="off">
@@ -1253,8 +1254,16 @@ async function renderRegAcc(){
   box.innerHTML = `<div class="racc">${rs.map(r => `<div class="rrow" data-r="${esc(r)}"><span>${esc(r)}</span><i><b style="width:${pc(r)}%"></b></i><em>${pc(r)}%<small>（${by[r].ok}/${by[r].n}）</small></em></div>`).join('')}</div>${lo && hi !== lo && pc(hi) > pc(lo) ? `<small>${esc(hi)}の話がいちばん得意です。${esc(lo)}の話は、背景の「そもそも」を読んでから予想すると当たりやすくなります。</small>${D.stories.some(s => s.region === lo) ? `<div class="tabs"><button class="chip" type="button" data-rgo="${esc(lo)}">今日の${esc(lo)}の話を見る →</button></div>` : ''}` : '<small>予想した話の地域ごとの正解率です。</small>'}`;
 }
 document.addEventListener('click', e => { const b = e.target.closest('[data-rgo]'); if(!b) return; filter = b.dataset.rgo; location.hash = '#today'; setTimeout(() => { renderFilters(); renderStories(); }, 0); });
+async function renderSkipped(){
+  const box = $('#rsk'); if(!box) return; const w0 = weekAgo();
+  const ks = Object.keys(st.skipped || {}).filter(k => k.slice(0, 10) >= w0).sort().reverse(), out = [];
+  for(const k of ks){ const d = k.slice(0, 10), id = k.slice(11); if(st.quiz[k] != null) continue;
+    const ed = d === D.date ? D : await getEdition(d); const s = ed && (ed.stories||[]).find(x => x.id === id); if(s) out.push({d, id, s}); if(out.length >= 8) break; }
+  $('#rskw').hidden = !out.length;
+  box.innerHTML = out.map(o => `<div class="item"><button type="button" class="gostory" data-gs="${esc(o.d)}|${esc(o.id)}">${esc(o.s.emoji||'📰')} ${esc(o.s.hook||o.s.title)} →</button><small>${esc(o.d.replace(/-/g,'.'))}</small></div>`).join('');
+}
 function renderReview(){
-  xferInit(); renderFollows(); renderRegAcc();
+  xferInit(); renderFollows(); renderRegAcc(); renderSkipped();
   checkBadges(); $('#rbadges').innerHTML = badgesHTML(); $('#rcal').innerHTML = calHTML();
   const w0 = weekAgo();
   const wkWords = st.words.filter(w => (w.savedAt||w.date||'') >= w0);
@@ -1296,6 +1305,7 @@ $('#rcard').addEventListener('click', e => {
   renderReview();
 });
 $('#rop').addEventListener('click', e => { const b = e.target.closest('[data-gs]'); if(!b) return; const [d, id] = b.dataset.gs.split('|'); goStory(d, id); });
+$('#rsk').addEventListener('click', e => { const b = e.target.closest('[data-gs]'); if(!b) return; const [d, id] = b.dataset.gs.split('|'); goStory(d, id); });
 $('#rfol').addEventListener('click', e => { const b = e.target.closest('[data-gs]'); if(!b) return; const [d, id] = b.dataset.gs.split('|'); goStory(d, id); });
 $('#rbm').addEventListener('click', e => { const g = e.target.closest('[data-gs]'); if(g){ const [d, id] = g.dataset.gs.split('|'); goStory(d, id); return; } const a=e.target.closest('a'); if(a && a.dataset.go) openEdition(a.dataset.go); });
 
