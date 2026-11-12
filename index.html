@@ -1219,9 +1219,9 @@ async function renderFollows(){
   if(!st.follows.length){ box.innerHTML = '<p class="empty">記事の「＋ この話を追いかける」を押すと、号をまたいだ流れがここにまとまります。</p>'; return; }
   const by = {}; st.follows.forEach(f => by[f] = []);
   for(const e of editions){ const ed = await getEdition(e.date); if(!ed) continue;
-    (ed.stories||[]).forEach(x => { if(by[x.thread]) by[x.thread].push({date:e.date, id:x.id, title:x.title, emoji:x.emoji}); }); }
+    (ed.stories||[]).forEach(x => { if(by[x.thread]) by[x.thread].push({date:e.date, id:x.id, title:x.title, emoji:x.emoji, q: x.quiz && st.quiz[e.date+'|'+x.id] != null ? (st.quiz[e.date+'|'+x.id] === x.quiz.answer ? '◎' : '△') : ''}); }); }
   box.innerHTML = st.follows.map(f => { const xs = by[f].sort((a,b) => b.date.localeCompare(a.date)); if(!xs.length) return '';
-    return `<div class="folc"><b>${esc(xs[0].emoji||'📰')} ${xs.length}つの号に登場</b>${xs.map((x,i) => `<button type="button" class="gostory" data-gs="${esc(x.date)}|${esc(x.id)}">${esc(x.date.replace(/-/g,'.'))}${i===0?'（最新）':''}　${esc(x.title)} →</button>`).join('')}</div>`; }).join('') || '<p class="empty">追いかけている話の記事が見つかりませんでした。</p>';
+    return `<div class="folc"><b>${esc(xs[0].emoji||'📰')} ${xs.length}つの号に登場</b>${xs.map((x,i) => `<button type="button" class="gostory" data-gs="${esc(x.date)}|${esc(x.id)}">${esc(x.date.replace(/-/g,'.'))}${i===0?'（最新）':''}　${x.q ? x.q + ' ' : ''}${esc(x.title)} →</button>`).join('')}${(() => { const a = xs.filter(x => x.q), ok = a.filter(x => x.q === '◎').length; return a.length ? `<small>この話の予想：${a.length}問中 ${ok}問 的中</small>` : ''; })()}</div>`; }).join('') || '<p class="empty">追いかけている話の記事が見つかりませんでした。</p>';
 }
 function calHTML(){
   const qd = st.quizDays || {}, days = [], d0 = new Date();
