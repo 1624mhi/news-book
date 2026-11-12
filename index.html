@@ -1536,7 +1536,7 @@ if(window.NEWSBOOK_SITE){
   window.gistPush = () => { if(!tok) return false; setDirty(true); clearTimeout(timer); timer = setTimeout(() => push().catch(() => stat('同期できませんでした。この端末には保存しています')), 2500); return true; };
   $('#gconn').addEventListener('click', async () => {
     const v = $('#gtok').value.trim(); if(!v) return;
-    tok = v; ls(TK, v); gid = null; ls(GK, null); $('#gtok').value = ''; ui(); stat('つないでいます…');
+    tok = v; ls(TK, v); gid = null; ls(GK, null); $('#gtok').value = ''; ui(); { const n = $('#gnudge'); if(n) n.remove(); } stat('つないでいます…');
     setDirty(true); await pull();
   });
   $('#gnow').addEventListener('click', () => pull());
