@@ -323,6 +323,7 @@ body.noscroll{overflow:hidden}
 .wsort{margin:8px 0 4px}
 .swho{display:flex;flex-wrap:wrap;gap:4px 6px;align-items:center;font-size:12px;color:var(--muted)}.swho b{color:var(--ink);margin-right:2px}.swho span{background:var(--accent-soft);color:var(--ink);border-radius:99px;padding:2px 8px}
 .tlgo{all:unset;display:block;cursor:pointer;color:var(--ink);text-decoration:underline;text-decoration-color:var(--line);text-underline-offset:3px}
+.gsteps{margin:6px 0 10px;display:grid;gap:8px}.gsteps a.pill{display:inline-block;text-decoration:none;margin-bottom:4px}#gnudge{display:block;margin:0 0 10px}
 .racc{display:grid;gap:6px;margin-bottom:6px}.rrow{display:grid;grid-template-columns:5.5em 1fr 6.5em;align-items:center;gap:8px;font-size:.9rem}.rrow i{height:10px;border-radius:5px;background:var(--line);overflow:hidden}.rrow b{display:block;height:100%;background:var(--accent);border-radius:5px}.rrow[data-r="日本"] b{background:var(--jp)}.rrow[data-r="マレーシア"] b{background:var(--my)}.rrow[data-r="世界"] b{background:var(--world)}.rrow em{font-style:normal;font-weight:700;text-align:right}.rrow em small{font-weight:400;color:var(--muted)}
 .cal{display:grid;gap:6px;max-width:360px}.calh,.calg{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}.calh span{font-size:11px;color:var(--muted);text-align:center}.calg i{aspect-ratio:1;border-radius:6px;display:grid;place-items:center;font-size:11px;font-style:normal;color:var(--muted)}.calg i.l0{background:var(--line)}.calg i.l1{background:color-mix(in srgb,var(--accent) 30%,transparent);color:var(--ink)}.calg i.l2{background:color-mix(in srgb,var(--accent) 60%,transparent);color:#fff}.calg i.l3{background:var(--accent);color:#fff}.calg i.td{outline:2px solid var(--ink);outline-offset:1px}.cal small{color:var(--muted)}
 #wfind{font:inherit;font-size:15px;width:100%;box-sizing:border-box;border:1.5px solid var(--line);border-radius:12px;padding:9px 12px;margin-bottom:10px;background:var(--surface);color:var(--ink)}
@@ -449,7 +450,7 @@ html.fs2 .sh-body,html.fs2 #v-kiso,html.fs2 #wbody,html.fs2 .sh-hero h2{zoom:1.2
     <div><h3>今週あとで読むにした話</h3><div class="list" id="rbm"></div></div>
     <details class="xfer" id="gsync"><summary>🔄 スマホとパソコンを自動で同期（GitHub）</summary>
       <p id="gstat">まだつながっていません。</p>
-      <div id="gform"><input type="password" id="gtok" placeholder="GitHubのトークン（ghp_… または github_pat_…）" autocomplete="off">
+      <div id="gform"><div class="gsteps"><div><a class="pill" href="https://github.com/settings/tokens/new?scopes=gist&amp;description=newsbook-sync" target="_blank" rel="noopener">① GitHubでトークンを作る ↗</a><br><small>「Expiration」を <b>No expiration</b> にして、いちばん下の緑の <b>Generate token</b> を押す。出てきた <b>ghp_…</b> をコピー。</small></div><div><small>② 下に貼って「つなぐ」。もう1台の端末でも同じトークンを貼るだけです（トークンはメモアプリなどに保存しておくと楽です）。</small></div></div><input type="password" id="gtok" placeholder="GitHubのトークン（ghp_… または github_pat_…）" autocomplete="off">
       <div class="xb"><button type="button" class="pill" id="gconn">つなぐ</button></div>
       <p>トークンはこの端末の中だけに保存され、GitHubとのやりとりにだけ使います。</p></div>
       <div class="xb" id="goff" hidden><button type="button" class="pill" id="gnow">今すぐ同期</button><button type="button" class="pill" id="gdis">この端末の接続を外す</button></div>
@@ -1532,7 +1533,9 @@ if(window.NEWSBOOK_SITE){
   $('#gdis').addEventListener('click', () => { tok = null; gid = null; ls(TK, null); ls(GK, null); ui(); stat('この端末に保存しています'); });
   if(!window.NEWSBOOK_SITE && $('#gsync')) $('#gsync').hidden = true;
   ui();
-  if(tok){ pull(); document.addEventListener('visibilitychange', () => { if(document.visibilityState === 'visible') pull(); else push().catch(() => {}); }); }
+  if(tok){ pull(); document.addEventListener('visibilitychange', () => { if(document.visibilityState === 'visible') pull(); else push().catch(() => {}); });
+    setInterval(() => { if(document.visibilityState === 'visible') pull(); }, 60000); }
+  else if(window.NEWSBOOK_SITE){ const sc = $('#score'); if(sc){ const nb = document.createElement('button'); nb.type = 'button'; nb.className = 'laterbtn'; nb.id = 'gnudge'; nb.textContent = '🔄 スマホとパソコンの記録を自動で同期する（最初に1回だけ設定）→'; nb.addEventListener('click', () => { location.hash = '#review'; setTimeout(() => { const d = $('#gsync'); if(d){ d.open = true; d.scrollIntoView({block:'start'}); } }, 120); }); sc.parentNode.insertBefore(nb, sc); } }
 })();
 /* ---------- サーバー連携（使えるときだけ） ---------- */
 (async () => {
