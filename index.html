@@ -889,7 +889,7 @@ function nextHTML(s){
   const order = (tileOrder.length ? tileOrder : D.stories.map(x => x.id)).map(id => D.stories.find(x => x.id === id)).filter(Boolean);
   const i = order.findIndex(x => x.id === s.id);
   const rest = order.slice(i + 1).concat(order.slice(0, Math.max(i, 0)));
-  const nx = rest.find(x => x.quiz && st.quiz[qkey(x)] == null) || rest[0];
+  const nx = rest.find(x => !seenDone(x)) || rest.find(x => x.quiz && st.quiz[qkey(x)] == null) || rest[0];
   if(!nx) return '';
   const left = order.filter(x => x.quiz && st.quiz[qkey(x)] == null).length;
   return `<div class="nextbox"><small style="color:var(--muted)">${left ? `まだ予想していない話があと${left}本` : '今日の話はぜんぶ予想しました'}</small>
