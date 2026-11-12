@@ -1372,6 +1372,12 @@ function swipeQuiz(s){
     `<button class="qopt${a!=null && i===qz.answer?' right':''}${a===i && i!==qz.answer?' wrong':''}" type="button" data-sq="${i}" ${a!=null?'disabled':''}>${'ABC'[i]}　${esc(c)}</button>`).join('')}</div>
     ${a!=null ? `<div class="qres"><b>${a===qz.answer?'◎ 正解！':'△ 正解は '+'ABC'[qz.answer]}</b>　${esc(shortText(qz.explain, 70))}</div>` : ''}</div>`;
 }
+function swSkipSeen(){
+  if(sdate !== D.date){ sdate = D.date; const ps = swPos(); si = ps.si || 0; kept = ps.kept || 0; }
+  const list = swipeList(), s0 = si; while(si < list.length && seenDone(list[si])) si++;
+  if(si >= list.length && list.some(s => !seenDone(s))) si = list.findIndex(s => !seenDone(s));
+  if(si !== s0) swSave();
+}
 function renderSwipe(){
   if(sdate !== D.date){ sdate = D.date; const ps = swPos(); si = ps.si || 0; kept = ps.kept || 0; }
   renderStabs();
@@ -1424,7 +1430,7 @@ $('#v-swipe').addEventListener('click', e => {
   const b = e.target.closest('button'); if(!b) return;
   if(b.dataset.sq){ const s = swipeList()[si]; if(s && s.quiz && st.quiz[qkey(s)] == null){ markDay(); st.quiz[qkey(s)] = +b.dataset.sq; justRight = +b.dataset.sq === s.quiz.answer ? qkey(s) : null; save(); renderSwipe(); justRight = null; } return; }
   if(b.dataset.s === 'keep' || b.dataset.s === 'skip') swipeDone(b.dataset.s);
-  if(b.dataset.st){ stab = b.dataset.st; si = 0; kept = 0; swSave(); renderSwipe(); return; }
+  if(b.dataset.st){ stab = b.dataset.st; si = 0; kept = 0; swSkipSeen(); swSave(); renderSwipe(); return; }
   if(b.dataset.s === 'more' && swipeList()[si]) openStory(swipeList()[si].id);
   if(b.dataset.s === 'again'){ si = 0; kept = 0; swSave(); renderSwipe(); }
   if(b.dataset.s === 'read'){ filter = '★'; location.hash = '#today'; }
@@ -1445,7 +1451,7 @@ function route(){
   navDue();
   if(v==='words') renderWords(); if(v==='review') renderReview(); if(v==='archive') renderArchive();
   if(v==='today'){ renderFilters(); renderStories(); }
-  if(v==='swipe') renderSwipe();
+  if(v==='swipe'){ swSkipSeen(); renderSwipe(); }
   if(v==='kiso' && window.renderKiso) window.renderKiso();
   if(v!=='today' && openId) closeSheet();
 }
