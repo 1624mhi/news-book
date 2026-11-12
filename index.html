@@ -620,7 +620,7 @@ async function searchPast(q){
 }
 $('#pastq').addEventListener('click', e => { const g = e.target.closest('[data-gs]'); if(!g) return; const [d, id] = g.dataset.gs.split('|'); $('#q').value = ''; qword = ''; searchPast(''); goStory(d, id); });
 $('#q').addEventListener('input', e => { qword = e.target.value.trim().toLowerCase(); renderStories(); clearTimeout(pqT); pqT = setTimeout(() => searchPast(qword), 300); });
-$('#score').addEventListener('click', e => { if(e.target.closest('[data-dshare]')){ shareDay(); return; } const d = e.target.closest('[data-dopen]'); if(d){ openSheet(d.dataset.dopen); return; } const b = e.target.closest('.laterbtn'); if(!b) return; filter = '★'; renderFilters(); renderStories(); });
+$('#score').addEventListener('click', e => { if(e.target.closest('[data-dshare]')){ shareDay(); return; } if(e.target.closest('[data-dterms]')){ const ws = todayNewTerms(); st.words.push(...ws); save(); try{ checkBadges(); }catch(_){} navDue(); renderStories(); toastMsg(`📒 ${ws.length}語を単語帳に入れました`); return; } const d = e.target.closest('[data-dopen]'); if(d){ openSheet(d.dataset.dopen); return; } const b = e.target.closest('.laterbtn'); if(!b) return; filter = '★'; renderFilters(); renderStories(); });
 $('#filters').addEventListener('click', e => { const b = e.target.closest('button'); if(!b) return; if(b.dataset.cmp){ compact = !compact; try{ localStorage.setItem('newsbook-cmp', compact ? '1' : '0'); }catch(_){} renderFilters(); renderStories(); return; } if(b.dataset.unr){ unrFirst = !unrFirst; try{ localStorage.setItem('newsbook-unr', unrFirst ? '1' : '0'); }catch(_){} renderFilters(); renderStories(); return; } filter = b.dataset.r; renderFilters(); renderStories(); });
 let sample = null;
 
@@ -866,6 +866,8 @@ async function shareDay(){
   try{ if(navigator.share){ await navigator.share({text}); return; } }catch(e){ if(e && e.name === 'AbortError') return; }
   try{ await navigator.clipboard.writeText(text); toastMsg('📋 今日の記録をコピーしました'); }catch(e){ toastMsg('コピーできませんでした'); }
 }
+function todayNewTerms(){ const have = new Set(st.words.map(w => w.term)), out = [];
+  D.stories.forEach(s => (s.terms||[]).forEach(x => { if(!have.has(x.term)){ have.add(x.term); out.push({term:x.term, def:x.def, yomi:x.yomi||'', story:s.id, storyTitle:s.title, date:D.date, savedAt:today(), known:false}); } })); return out; }
 function doneHTML(qs, ok){
   const r = ok.length / qs.length, msg = r >= .8 ? 'すごい、ほぼ読み通せています！' : r >= .5 ? 'いい感じ。外れた話こそ覚えやすいです。' : '外れが多い日は、学べることが多い日です。';
   const ng = qs.filter(s => st.quiz[qkey(s)] !== s.quiz.answer);
@@ -877,6 +879,7 @@ function doneHTML(qs, ok){
     ${fol.length ? `<span class="dn">追いかけ中の話の続き：${fol.map(s => `<button type="button" class="pill" data-dopen="${esc(s.id)}">${esc(s.emoji||'📰')} ${esc(s.hook||s.title)}</button>`).join('')}</span>` : ''}
     ${kp ? `<a class="kisonext" href="#kiso-${esc(kp.id)}">📘 仕上げに3分：${esc(kp.emoji)} ${esc(kp.title)} →</a>` : ''}
     ${(() => { const n = srsPool().due.length; return n ? `<a class="kisonext" href="#review">🧠 今日ふりかえる単語 ${n}語 →</a>` : ''; })()}
+    ${(() => { const n = todayNewTerms().length; return n ? `<button type="button" class="pill" data-dterms="1">📒 今日出てきた言葉をまとめて単語帳へ（${n}語）</button>` : ''; })()}
     <button type="button" class="pill" data-dshare="1">📤 今日の記録をメモする・送る</button>
     <small>次の号は明日の朝8時（マレーシア時間）に届きます。</small></div>`;
 }
